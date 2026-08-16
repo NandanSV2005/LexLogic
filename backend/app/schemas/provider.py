@@ -31,6 +31,7 @@ class ProviderProfileCreate(ProviderProfileBase):
 
 
 class ProviderProfileUpdate(BaseModel):
+    provider_type: Optional[ProviderType] = None
     full_name: Optional[str] = None
     phone: Optional[str] = None
     location: Optional[str] = None
@@ -38,6 +39,7 @@ class ProviderProfileUpdate(BaseModel):
     bio: Optional[str] = None
     availability_status: Optional[AvailabilityStatus] = None
     field_values: Optional[List[ProviderFieldValueInput]] = Field(default_factory=list)
+
 
 
 class ProviderProfileDetailOut(BaseModel):

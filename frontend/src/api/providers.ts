@@ -19,6 +19,7 @@ export interface CreateProviderProfileData {
 }
 
 export interface UpdateProviderProfileData {
+  provider_type?: ProviderType;
   full_name?: string;
   phone?: string;
   location?: string;

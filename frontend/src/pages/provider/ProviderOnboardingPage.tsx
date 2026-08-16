@@ -182,6 +182,7 @@ export const ProviderOnboardingPage: React.FC = () => {
       } else {
         // Update profile
         await providersApi.updateProfile({
+          provider_type: providerType,
           full_name: fullName.trim(),
           phone: phone.trim(),
           location: location.trim(),

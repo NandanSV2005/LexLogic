@@ -1,4 +1,5 @@
 from typing import List, Optional
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.database import get_db
@@ -16,12 +17,14 @@ from app.schemas.provider import (
     ProviderProfileCreate,
     ProviderProfileUpdate,
     ProviderProfileDetailOut,
+    ProviderFieldValueInput,
     ProviderFieldValueDetail,
     ProviderPublicOut,
     ProviderVerificationSubmit,
     AdminVerificationDecision,
     ProviderDashboardOut,
 )
+
 from app.schemas.points import PointTransactionOut, PointsSummaryOut
 from app.services.provider_service import (
     calculate_profile_completion,
@@ -150,6 +153,8 @@ def update_my_provider_profile(
             detail="Provider profile not found"
         )
 
+    if profile_in.provider_type is not None:
+        provider.provider_type = profile_in.provider_type
     if profile_in.full_name is not None:
         provider.full_name = profile_in.full_name
     if profile_in.phone is not None:
@@ -183,6 +188,40 @@ def update_my_provider_profile(
     out = ProviderProfileDetailOut.model_validate(provider)
     out.generic_fields = _build_generic_fields_list(provider, db)
     return out
+
+
+class ProviderGenericFieldsUpdatePayload(BaseModel):
+    fields: List[ProviderFieldValueInput]
+
+
+@router.put(
+    "/fields",
+    response_model=ProviderProfileDetailOut,
+    status_code=status.HTTP_200_OK,
+    summary="Update provider generic fields",
+    description="Updates provider-type-specific generic fields."
+)
+def update_my_generic_fields(
+    fields_in: ProviderGenericFieldsUpdatePayload,
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> ProviderProfileDetailOut:
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Provider profile not found"
+        )
+
+    field_dicts = [fv.model_dump() for fv in fields_in.fields]
+    update_provider_generic_fields(db, provider, field_dicts)
+    calculate_profile_completion(provider, db)
+    db.commit()
+
+    out = ProviderProfileDetailOut.model_validate(provider)
+    out.generic_fields = _build_generic_fields_list(provider, db)
+    return out
+
 
 
 @router.get(
