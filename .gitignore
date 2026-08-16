@@ -24,6 +24,15 @@ dist-ssr/
 Thumbs.db
 *.log
 
-# Temp Storage
+# Environment Files & Secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# Temp & Storage
 .tempmediaStorage/
 scratch/
+backend/storage/
+
+

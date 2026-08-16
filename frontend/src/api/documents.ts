@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient, API_BASE_URL } from './client';
 import { DocumentItem, DocumentShareItem } from '../types';
 
 export const documentsApi = {
@@ -41,6 +41,7 @@ export const documentsApi = {
 
   downloadDocumentUrl: (documentId: number): string => {
     const token = localStorage.getItem('lexlogic_token');
-    return `http://localhost:8000/api/documents/${documentId}/download?token=${token || ''}`;
+    return `${API_BASE_URL}/api/documents/${documentId}/download?token=${token || ''}`;
   },
 };
+
