@@ -11,10 +11,10 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
-// Attach JWT Bearer token if present in localStorage
+// Attach JWT Bearer token if present in sessionStorage or localStorage
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('lexlogic_token');
+    const token = sessionStorage.getItem('lexlogic_token') || localStorage.getItem('lexlogic_token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -34,6 +34,8 @@ apiClient.interceptors.response.use(
       // Clear token on 401 Unauthorized (unless logging in or registering)
       const currentPath = window.location.pathname;
       if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
+        sessionStorage.removeItem('lexlogic_token');
+        sessionStorage.removeItem('lexlogic_user');
         localStorage.removeItem('lexlogic_token');
         localStorage.removeItem('lexlogic_user');
       }

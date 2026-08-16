@@ -56,4 +56,10 @@ export const requestsApi = {
     const response = await apiClient.post<ServiceRequest>(`/api/requests/${requestId}/complete`);
     return response.data;
   },
+
+  listMyProviderCases: async (): Promise<ServiceRequest[]> => {
+    const response = await apiClient.get<ServiceRequest[]>('/api/requests/provider/my-cases');
+    return response.data;
+  },
 };
+

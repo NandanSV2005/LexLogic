@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Navbar } from '../../components/layout/Navbar';
 import { Card } from '../../components/common/Card';
@@ -30,20 +30,27 @@ import {
   TrendingUp,
   Send,
   Check,
+  Eye,
+  X,
+  Briefcase,
+  AlertCircle,
 } from 'lucide-react';
 
 export const ProviderDashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [profile, setProfile] = useState<Provider | null>(null);
   const [metrics, setMetrics] = useState<ProviderDashboardMetrics | null>(null);
   const [eligibleRequests, setEligibleRequests] = useState<ServiceRequest[]>([]);
+  const [myCases, setMyCases] = useState<ServiceRequest[]>([]);
   const [pointsHistory, setPointsHistory] = useState<PointTransactionOut[]>([]);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isUpdatingAvailability, setIsUpdatingAvailability] = useState<boolean>(false);
   const [isSubmittingVerification, setIsSubmittingVerification] = useState<boolean>(false);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [selectedCase, setSelectedCase] = useState<ServiceRequest | null>(null);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -53,16 +60,23 @@ export const ProviderDashboardPage: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      const [profData, dashData, reqData, historyData] = await Promise.all([
+      const [profData, dashData, reqData, casesData, historyData] = await Promise.all([
         providersApi.getMe(),
         providersApi.getDashboard(),
         requestsApi.getEligibleRequests().catch(() => []),
+        requestsApi.listMyProviderCases().catch(() => []),
         providersApi.getPointsHistory().catch(() => []),
       ]);
+
+      if (profData && (!profData.is_profile_complete || profData.profile_completion_percentage < 100)) {
+        navigate('/provider/onboarding', { replace: true });
+        return;
+      }
 
       setProfile(profData);
       setMetrics(dashData);
       setEligibleRequests(reqData);
+      setMyCases(casesData);
       setPointsHistory(historyData);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to load provider dashboard metrics.');
@@ -119,10 +133,10 @@ export const ProviderDashboardPage: React.FC = () => {
 
     try {
       await requestsApi.respondToRequest(requestId, 'ACCEPT');
-      setSuccessMessage(`Expressed interest in Request #${requestId}! Points awarded.`);
+      setSuccessMessage(`Expressed interest in Request #${requestId}! Added to Current Cases.`);
       await fetchDashboardData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to respond to request.');
+      setErrorMessage(err.message || 'Failed to express interest in request.');
     } finally {
       setActionLoadingId(null);
     }
@@ -173,7 +187,7 @@ export const ProviderDashboardPage: React.FC = () => {
               {renderVerificationBadge(profile?.verification_status)}
             </div>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Provider workspace for request matching, profile completion incentives, and reliability scoring.
+              Provider workspace for request matching, active case management, and incentives.
             </p>
           </div>
 
@@ -227,16 +241,16 @@ export const ProviderDashboardPage: React.FC = () => {
               <Card className="p-5 border-slate-800 bg-slate-900/90 shadow-xl">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Total Requests
+                    My Active Cases
                   </span>
-                  <div className="p-2 bg-sky-500/10 text-sky-400 rounded-lg">
-                    <FileText className="w-4 h-4" />
+                  <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg">
+                    <Briefcase className="w-4 h-4" />
                   </div>
                 </div>
                 <span className="text-2xl font-bold text-slate-100 mt-2 block">
-                  {metrics.total_requests}
+                  {myCases.length}
                 </span>
-                <span className="text-[11px] text-slate-500 mt-1 block">Inquiries assigned</span>
+                <span className="text-[11px] text-slate-500 mt-1 block">Interacted requests</span>
               </Card>
 
               <Card className="p-5 border-slate-800 bg-slate-900/90 shadow-xl">
@@ -289,61 +303,6 @@ export const ProviderDashboardPage: React.FC = () => {
               </Card>
             </div>
 
-            {/* PROFILE COMPLETION & INCENTIVE WIDGET */}
-            <Card className="p-6 border-slate-800 bg-slate-900/90 shadow-xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo-400" />
-                    <h2 className="text-base font-bold text-slate-100">
-                      Profile Completion: {profile.profile_completion_percentage}%
-                    </h2>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Complete profile → earn points (+50 pts awarded upon 100% completion).
-                  </p>
-                </div>
-
-                <Link to="/provider/profile">
-                  <Button variant="primary" size="sm" leftIcon={<Edit3 className="w-3.5 h-3.5" />}>
-                    Update Profile Fields
-                  </Button>
-                </Link>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800">
-                <div
-                  className="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full transition-all duration-500 rounded-full"
-                  style={{ width: `${profile.profile_completion_percentage}%` }}
-                />
-              </div>
-
-              {/* Profile Requirements Checklist */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2">
-                <div className="flex items-center gap-2">
-                  {profile.full_name ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <Clock className="w-4 h-4 text-slate-600 shrink-0" />}
-                  <span className={profile.full_name ? 'text-slate-200' : 'text-slate-500'}>Full Name</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {profile.location ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <Clock className="w-4 h-4 text-slate-600 shrink-0" />}
-                  <span className={profile.location ? 'text-slate-200' : 'text-slate-500'}>Location</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {profile.bio ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <Clock className="w-4 h-4 text-slate-600 shrink-0" />}
-                  <span className={profile.bio ? 'text-slate-200' : 'text-slate-500'}>Biography</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {profile.generic_fields && profile.generic_fields.some((f) => f.value) ? (
-                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                  ) : (
-                    <Clock className="w-4 h-4 text-slate-600 shrink-0" />
-                  )}
-                  <span className="text-slate-200">Bar/Practice Details</span>
-                </div>
-              </div>
-            </Card>
-
             {/* CONTROLS GRID: AVAILABILITY & VERIFICATION */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* AVAILABILITY TOGGLE WIDGET */}
@@ -362,7 +321,7 @@ export const ProviderDashboardPage: React.FC = () => {
                 </div>
 
                 <p className="text-xs text-slate-400">
-                  Toggle your availability status for receiving new citizen matching recommendations.
+                  Toggle availability status for receiving new citizen matching recommendations.
                 </p>
 
                 <div className="grid grid-cols-3 gap-2 pt-2">
@@ -421,7 +380,7 @@ export const ProviderDashboardPage: React.FC = () => {
                 </div>
 
                 <p className="text-xs text-slate-400">
-                  Verification increases your backend matching score by +15% and displays verified badges.
+                  Verification increases matching score by +15% and displays verified badge.
                 </p>
 
                 <div className="pt-2">
@@ -445,60 +404,81 @@ export const ProviderDashboardPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-xs text-center font-medium">
-                      Verification rejected. Please update bar details and re-submit.
+                      Verification rejected. Please update details and re-submit.
                     </div>
                   )}
                 </div>
               </Card>
             </div>
 
-            {/* RELIABILITY SCORECARD */}
-            <Card className="p-6 border-slate-800 bg-slate-900/90 shadow-xl">
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-800">
-                <TrendingUp className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
-                  Reliability Information
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase block mb-1">
-                    System Reliability Score
-                  </span>
-                  <span className="text-xl font-bold text-indigo-400">
-                    {metrics.reliability_score.toFixed(1)} / 100
-                  </span>
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    Calculated by backend scoring algorithm
-                  </span>
-                </div>
-
-                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase block mb-1">
-                    Response Rate Metric
-                  </span>
-                  <span className="text-xl font-bold text-emerald-400">
-                    {metrics.response_rate.toFixed(1)}%
-                  </span>
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    Prompt response time tracking
-                  </span>
-                </div>
-
-                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase block mb-1">
-                    Total Engagements
-                  </span>
-                  <span className="text-xl font-bold text-sky-400">
-                    {metrics.completed_requests} / {metrics.total_requests}
-                  </span>
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    Completed case resolutions
-                  </span>
+            {/* CURRENT CASES ("MY CASES") SECTION */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-100 tracking-tight flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-indigo-400" /> Current Cases ({myCases.length})
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Service requests where you have expressed interest or engaged.
+                  </p>
                 </div>
               </div>
-            </Card>
+
+              {myCases.length === 0 ? (
+                <EmptyState
+                  title="No Active Cases Yet"
+                  description="Click 'Express Interest' on eligible requests below to add requests to your current cases feed."
+                />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {myCases.map((req) => (
+                    <Card key={req.id} className="p-5 border-slate-800 bg-slate-900/90 shadow-md space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-indigo-400">Request #{req.id}</span>
+                          <Badge variant="info">{req.service_category}</Badge>
+                        </div>
+                        <Badge variant="success">INTEREST EXPRESSED</Badge>
+                      </div>
+
+                      <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
+                        "{req.description}"
+                      </p>
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-emerald-400" /> {req.location}
+                        </span>
+                        <span className="text-slate-500 font-medium">Status: {req.status}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedCase(req)}
+                          leftIcon={<Eye className="w-3.5 h-3.5" />}
+                        >
+                          View Case Details
+                        </Button>
+
+                        {req.status !== 'COMPLETED' && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            isLoading={actionLoadingId === req.id}
+                            onClick={() => handleCompleteRequest(req.id)}
+                            leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                          >
+                            Mark Completed
+                          </Button>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* ELIGIBLE SERVICE REQUESTS FEED */}
             <div className="space-y-4">
@@ -508,15 +488,15 @@ export const ProviderDashboardPage: React.FC = () => {
                     Eligible Service Requests ({eligibleRequests.length})
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Open citizen requests matching your provider type ({profile.provider_type}).
+                    Open citizen requests matching your category ({profile.provider_type}) that you haven't responded to yet.
                   </p>
                 </div>
               </div>
 
               {eligibleRequests.length === 0 ? (
                 <EmptyState
-                  title="No Eligible Requests"
-                  description={`No open service requests currently match your provider category (${profile.provider_type}).`}
+                  title="No Eligible Requests Available"
+                  description={`No open service requests match your category (${profile.provider_type}) currently.`}
                 />
               ) : (
                 <div className="grid grid-cols-1 gap-4">
@@ -529,6 +509,9 @@ export const ProviderDashboardPage: React.FC = () => {
                             <span className="text-slate-600">•</span>
                             <span className="text-xs font-semibold text-slate-200">{req.service_category}</span>
                             <Badge variant="info">{req.urgency} Urgency</Badge>
+                            {req.legal_aid_interest && (
+                              <Badge variant="purple">Legal Aid Flagged (+30 pts)</Badge>
+                            )}
                           </div>
                           <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                             {req.description}
@@ -550,16 +533,6 @@ export const ProviderDashboardPage: React.FC = () => {
                             leftIcon={<Send className="w-3.5 h-3.5" />}
                           >
                             Express Interest
-                          </Button>
-
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            isLoading={actionLoadingId === req.id}
-                            onClick={() => handleCompleteRequest(req.id)}
-                            leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                          >
-                            Mark Completed
                           </Button>
                         </div>
                       </div>
@@ -611,6 +584,72 @@ export const ProviderDashboardPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* CASE DETAILS MODAL */}
+      {selectedCase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <Card className="max-w-lg w-full p-6 border-slate-800 bg-slate-900 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-base font-bold text-slate-100">
+                  Case Details — Request #{selectedCase.id}
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedCase(null)}
+                className="text-slate-400 hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <span className="text-slate-500 font-semibold uppercase text-[10px] block">Service Category</span>
+                <span className="text-slate-200 text-sm font-medium">{selectedCase.service_category}</span>
+              </div>
+
+              <div>
+                <span className="text-slate-500 font-semibold uppercase text-[10px] block">Legal Need Description</span>
+                <p className="text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  {selectedCase.description}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div>
+                  <span className="text-slate-500 font-semibold uppercase text-[10px] block">Location</span>
+                  <span className="text-slate-200 font-medium">{selectedCase.location}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-semibold uppercase text-[10px] block">Urgency</span>
+                  <Badge variant="info">{selectedCase.urgency}</Badge>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-semibold uppercase text-[10px] block">Legal Aid Interest</span>
+                  <span className="text-slate-200 font-medium">
+                    {selectedCase.legal_aid_interest ? 'Yes (Pro-bono flagged)' : 'Standard'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-semibold uppercase text-[10px] block">Created Date</span>
+                  <span className="text-slate-200 font-medium">
+                    {new Date(selectedCase.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <Button variant="outline" size="sm" onClick={() => setSelectedCase(null)}>
+                Close
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
+

@@ -40,7 +40,7 @@ export const documentsApi = {
   },
 
   downloadDocumentUrl: (documentId: number): string => {
-    const token = localStorage.getItem('lexlogic_token');
+    const token = sessionStorage.getItem('lexlogic_token') || localStorage.getItem('lexlogic_token');
     return `${API_BASE_URL}/api/documents/${documentId}/download?token=${token || ''}`;
   },
 };

@@ -13,6 +13,8 @@ import { RequestDetailsPage } from './pages/citizen/RequestDetailsPage';
 import { ProviderDetailsPage } from './pages/citizen/ProviderDetailsPage';
 import { ProviderDashboardPage } from './pages/provider/ProviderDashboardPage';
 import { ProviderProfilePage } from './pages/provider/ProviderProfilePage';
+import { ProviderOnboardingPage } from './pages/provider/ProviderOnboardingPage';
+
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminProvidersPage } from './pages/admin/AdminProvidersPage';
 import { AdminProviderDetailsPage } from './pages/admin/AdminProviderDetailsPage';
@@ -73,6 +75,7 @@ export const App: React.FC = () => {
 
           {/* Provider Protected Routes */}
           <Route element={<ProtectedRoute allowedRoles={[UserRole.PROVIDER]} />}>
+            <Route path="/provider/onboarding" element={<ProviderOnboardingPage />} />
             <Route path="/provider/dashboard" element={<ProviderDashboardPage />} />
             <Route path="/provider/profile" element={<ProviderProfilePage />} />
           </Route>

@@ -17,6 +17,8 @@ from app.services.request_service import (
     respond_to_request,
     complete_service_request,
 )
+from app.services.provider_service import calculate_profile_completion
+
 
 router = APIRouter(prefix="/requests", tags=["Service Requests"])
 
@@ -59,7 +61,7 @@ def get_my_requests(
     response_model=List[ServiceRequestOut],
     status_code=status.HTTP_200_OK,
     summary="Get open requests eligible for provider",
-    description="Returns OPEN service requests matching the provider's preferred provider type."
+    description="Returns OPEN service requests matching the provider's preferred provider type that the provider has not yet responded to."
 )
 def get_eligible_requests(
     current_user: User = Depends(require_provider),
@@ -69,10 +71,48 @@ def get_eligible_requests(
     if not provider:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
 
+    calculate_profile_completion(provider, db)
+    if not provider.is_profile_complete:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Provider profile incomplete. Please complete your professional profile before accessing citizen requests."
+        )
+
+    # Subquery for requests provider has already interacted with
+    interacted_ids_query = db.query(RequestProvider.request_id).filter(
+        RequestProvider.provider_id == provider.id
+    )
+
     requests = db.query(ServiceRequest).filter(
         ServiceRequest.status.in_([RequestStatus.OPEN, RequestStatus.CONTACTED]),
-        ServiceRequest.preferred_provider_type == provider.provider_type
+        ServiceRequest.preferred_provider_type == provider.provider_type,
+        ~ServiceRequest.id.in_(interacted_ids_query)
     ).order_by(ServiceRequest.created_at.desc()).all()
+
+    return requests
+
+
+@router.get(
+    "/provider/my-cases",
+    response_model=List[ServiceRequestOut],
+    status_code=status.HTTP_200_OK,
+    summary="Get current provider's active/interacted cases",
+    description="Returns service requests where the provider has expressed interest."
+)
+def get_provider_my_cases(
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> List[ServiceRequestOut]:
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
+
+    requests = db.query(ServiceRequest).join(
+        RequestProvider, RequestProvider.request_id == ServiceRequest.id
+    ).filter(
+        RequestProvider.provider_id == provider.id
+    ).order_by(RequestProvider.created_at.desc()).all()
+
     return requests
 
 
@@ -157,6 +197,24 @@ def respond_request(
     provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
     if not provider:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
+
+    calculate_profile_completion(provider, db)
+    if not provider.is_profile_complete:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Provider profile incomplete. Please complete your professional profile before expressing interest."
+        )
+
+    # Check for existing interaction to prevent duplicate interest
+    existing_interaction = db.query(RequestProvider).filter(
+        RequestProvider.request_id == req.id,
+        RequestProvider.provider_id == provider.id
+    ).first()
+    if existing_interaction:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have already expressed interest in this service request."
+        )
 
     interaction = respond_to_request(db, provider, req)
     return interaction

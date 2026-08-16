@@ -112,9 +112,19 @@ def test_provider_eligible_requests_and_response(client, setup_database):
     db.add_all([citizen, prov_user])
     db.commit()
 
-    provider = Provider(user_id=prov_user.id, provider_type=ProviderType.MEDIATOR, full_name="Mediator Rita")
+    provider = Provider(
+        user_id=prov_user.id,
+        provider_type=ProviderType.MEDIATOR,
+        full_name="Mediator Rita",
+        phone="+919876543210",
+        location="Bangalore",
+        experience_years=8,
+        bio="Experienced mediator specializing in commercial disputes."
+    )
     db.add(provider)
     db.commit()
+    from app.services.provider_service import update_provider_generic_fields
+    update_provider_generic_fields(db, provider, [{"field_name": "specialization", "value": "Commercial Dispute Mediation"}])
 
     # Create request matching MEDIATOR
     req = ServiceRequest(
@@ -141,9 +151,9 @@ def test_provider_eligible_requests_and_response(client, setup_database):
     assert res_resp.status_code == 200
     assert res_resp.json()["status"] == "CONTACTED"
 
-    # Verify provider points (+10 points for REQUEST_RESPONDED)
+    # Verify provider points (+20 profile completed + 10 REQUEST_RESPONDED = 30 points)
     db.refresh(provider)
-    assert provider.points == 10
+    assert provider.points == 30
     assert provider.total_requests == 1
 
 
@@ -156,9 +166,21 @@ def test_request_completion_workflow_and_points(client, setup_database):
     db.add_all([citizen, prov_user])
     db.commit()
 
-    provider = Provider(user_id=prov_user.id, provider_type=ProviderType.DOCUMENT_WRITER, full_name="Writer Vijay", completed_requests=0, points=0)
+    provider = Provider(
+        user_id=prov_user.id,
+        provider_type=ProviderType.DOCUMENT_WRITER,
+        full_name="Writer Vijay",
+        phone="+919876543211",
+        location="Hyderabad",
+        experience_years=10,
+        bio="Legal document writer.",
+        completed_requests=0,
+        points=0
+    )
     db.add(provider)
     db.commit()
+    from app.services.provider_service import update_provider_generic_fields
+    update_provider_generic_fields(db, provider, [{"field_name": "document_types", "value": "Property Sale Deeds, Contracts"}])
 
     req = ServiceRequest(
         citizen_id=citizen.id,
@@ -185,8 +207,8 @@ def test_request_completion_workflow_and_points(client, setup_database):
     # Verify provider stats
     db.refresh(provider)
     assert provider.completed_requests == 1
-    # Points: 10 (respond) + 20 (complete) = 30 points
-    assert provider.points == 30
+    # Points: 20 (profile completion) + 10 (respond) + 20 (complete) = 50 points
+    assert provider.points == 50
     assert provider.reliability_score > 0.0
 
 
@@ -199,9 +221,23 @@ def test_legal_aid_interest_flag_and_pro_bono_points(client, setup_database):
     db.add_all([citizen, prov_user])
     db.commit()
 
-    provider = Provider(user_id=prov_user.id, provider_type=ProviderType.ADVOCATE, full_name="Advocate Roy", points=0)
+    provider = Provider(
+        user_id=prov_user.id,
+        provider_type=ProviderType.ADVOCATE,
+        full_name="Advocate Roy",
+        phone="+919876543212",
+        location="Kolkata",
+        experience_years=12,
+        bio="High court advocate.",
+        points=0
+    )
     db.add(provider)
     db.commit()
+    from app.services.provider_service import update_provider_generic_fields
+    update_provider_generic_fields(db, provider, [
+        {"field_name": "practice_area", "value": "Tenant Eviction Defense"},
+        {"field_name": "registration_details", "value": "WB/1234/2012"}
+    ])
 
     # Request flagged for legal aid interest
     req = ServiceRequest(
@@ -222,9 +258,9 @@ def test_legal_aid_interest_flag_and_pro_bono_points(client, setup_database):
     client.post(f"/api/requests/{req.id}/respond", headers=headers)
     client.post(f"/api/requests/{req.id}/complete", headers=headers)
 
-    # Verify points: 10 (respond) + 20 (complete) + 30 (pro bono) = 60 points!
+    # Verify points: 20 (profile completion) + 10 (respond) + 20 (complete) + 30 (pro bono) = 80 points!
     db.refresh(provider)
-    assert provider.points == 60
+    assert provider.points == 80
 
     # Verify legal aid listing endpoint
     res_aid = client.get("/api/requests/legal-aid", headers=headers)

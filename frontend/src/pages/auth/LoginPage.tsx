@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Scale, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Scale, Lock, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../api';
 import { UserRole } from '../../types';
@@ -41,13 +41,6 @@ export const LoginPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Demo credential quick-fill handler for hackathon presentation
-  const fillDemoCredentials = (demoEmail: string, demoPass: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPass);
-    setErrorMessage(null);
   };
 
   return (
@@ -104,37 +97,6 @@ export const LoginPage: React.FC = () => {
               Sign In
             </Button>
           </form>
-
-          {/* Demo Accounts Quick Selector */}
-          <div className="mt-8 pt-6 border-t border-slate-800">
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-3 font-semibold uppercase tracking-wider">
-              <ShieldCheck className="w-4 h-4 text-indigo-400" />
-              <span>Demo Quick-Fill Accounts</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => fillDemoCredentials('citizen.anita@lexlogic.demo', 'Citizen123!')}
-                className="px-2.5 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-300 hover:text-white transition-colors text-center font-medium"
-              >
-                Citizen
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoCredentials('advocate.sharma@lexlogic.demo', 'Provider123!')}
-                className="px-2.5 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-300 hover:text-white transition-colors text-center font-medium"
-              >
-                Advocate
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoCredentials('admin@lexlogic.demo', 'Admin123!')}
-                className="px-2.5 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-slate-300 hover:text-white transition-colors text-center font-medium"
-              >
-                Admin
-              </button>
-            </div>
-          </div>
 
           <div className="mt-6 text-center text-xs text-slate-400">
             Don't have an account yet?{' '}
