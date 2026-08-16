@@ -248,7 +248,23 @@ export interface PointsSummaryOut {
   transactions_count: number;
 }
 
+export interface InterestedProvider {
+  provider_id: number;
+  full_name: string;
+  provider_type: ProviderType;
+  phone?: string;
+  location?: string;
+  experience_years: number;
+  bio?: string;
+  rating: number;
+  verification_status: string;
+  reliability_score: number;
+  interaction_status: InteractionStatus;
+  requested_documents?: string;
+}
+
 export interface APIErrorResponse {
   detail: string;
   errors?: Array<{ field: string; message: string }>;
 }
+

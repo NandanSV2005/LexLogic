@@ -171,6 +171,34 @@ export const ProviderDashboardPage: React.FC = () => {
     }
   };
 
+  const [docModalCase, setDocModalCase] = useState<ServiceRequest | null>(null);
+  const [requestedDocsInput, setRequestedDocsInput] = useState<string>('');
+  const [isSubmittingDocs, setIsSubmittingDocs] = useState<boolean>(false);
+
+  const handleOpenDocModal = (req: ServiceRequest) => {
+    setDocModalCase(req);
+    setRequestedDocsInput('');
+  };
+
+  const handleSaveDocRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docModalCase || !requestedDocsInput.trim()) return;
+
+    setIsSubmittingDocs(true);
+    setErrorMessage(null);
+
+    try {
+      await requestsApi.requestDocuments(docModalCase.id, requestedDocsInput.trim());
+      setSuccessMessage(`Document request sent to Citizen for Request #${docModalCase.id}!`);
+      setDocModalCase(null);
+      await fetchDashboardData();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to submit document request.');
+    } finally {
+      setIsSubmittingDocs(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Navbar />
@@ -438,7 +466,9 @@ export const ProviderDashboardPage: React.FC = () => {
                           <span className="text-xs font-bold text-indigo-400">Request #{req.id}</span>
                           <Badge variant="info">{req.service_category}</Badge>
                         </div>
-                        <Badge variant="success">INTEREST EXPRESSED</Badge>
+                        <Badge variant="success">
+                          {req.status === 'IN_PROGRESS' ? 'CASE ASSIGNED' : 'INTEREST EXPRESSED'}
+                        </Badge>
                       </div>
 
                       <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
@@ -452,15 +482,26 @@ export const ProviderDashboardPage: React.FC = () => {
                         <span className="text-slate-500 font-medium">Status: {req.status}</span>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedCase(req)}
-                          leftIcon={<Eye className="w-3.5 h-3.5" />}
-                        >
-                          View Case Details
-                        </Button>
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedCase(req)}
+                            leftIcon={<Eye className="w-3.5 h-3.5" />}
+                          >
+                            View Details
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenDocModal(req)}
+                            leftIcon={<FileText className="w-3.5 h-3.5 text-indigo-400" />}
+                          >
+                            Request Docs
+                          </Button>
+                        </div>
 
                         {req.status !== 'COMPLETED' && (
                           <Button
@@ -649,7 +690,55 @@ export const ProviderDashboardPage: React.FC = () => {
           </Card>
         </div>
       )}
+
+      {/* REQUEST DOCUMENTS MODAL */}
+      {docModalCase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <Card className="max-w-lg w-full p-6 border-slate-800 bg-slate-900 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-base font-bold text-slate-100">
+                  Request Documents from Citizen — Request #{docModalCase.id}
+                </h3>
+              </div>
+              <button
+                onClick={() => setDocModalCase(null)}
+                className="text-slate-400 hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDocRequest} className="space-y-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                  Specify Required Documents / Case Details
+                </label>
+                <textarea
+                  rows={4}
+                  value={requestedDocsInput}
+                  onChange={(e) => setRequestedDocsInput(e.target.value)}
+                  required
+                  placeholder="e.g. Property Title Deed, Sale Agreement, Identification Proof (Aadhaar/PAN), Tax Receipts..."
+                  className="w-full px-3.5 py-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 leading-relaxed"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <Button variant="outline" size="sm" onClick={() => setDocModalCase(null)} type="button">
+                  Cancel
+                </Button>
+                <Button variant="primary" size="sm" type="submit" isLoading={isSubmittingDocs}>
+                  Send Request to Citizen
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
+
 

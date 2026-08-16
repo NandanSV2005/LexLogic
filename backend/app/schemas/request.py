@@ -43,4 +43,25 @@ class RequestProviderOut(BaseModel):
     provider_id: int
     status: InteractionStatus
     response_time_seconds: Optional[float] = None
+    requested_documents: Optional[str] = None
     created_at: datetime
+
+
+class DocumentRequestInput(BaseModel):
+    requested_documents: str = Field(..., description="Comma-separated or bullet list of requested documents/information")
+
+
+class InterestedProviderOut(BaseModel):
+    provider_id: int
+    full_name: str
+    provider_type: ProviderType
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    experience_years: int
+    bio: Optional[str] = None
+    rating: float
+    verification_status: str
+    reliability_score: float
+    interaction_status: InteractionStatus
+    requested_documents: Optional[str] = None
+

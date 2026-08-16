@@ -5,13 +5,16 @@ from app.db.database import get_db
 from app.api.deps import require_citizen, require_provider, get_current_active_user
 from app.models.user import User, UserRole
 from app.models.provider import Provider
-from app.models.request import ServiceRequest, RequestStatus, RequestProvider
+from app.models.request import ServiceRequest, RequestStatus, RequestProvider, InteractionStatus
 from app.schemas.request import (
     ServiceRequestCreate,
     ServiceRequestUpdateStatus,
     ServiceRequestOut,
     RequestProviderOut,
+    DocumentRequestInput,
+    InterestedProviderOut,
 )
+
 from app.services.request_service import (
     create_citizen_request,
     respond_to_request,
@@ -278,3 +281,119 @@ def update_request_status(
     db.commit()
     db.refresh(req)
     return req
+
+
+@router.post(
+    "/{request_id}/request-documents",
+    response_model=RequestProviderOut,
+    status_code=status.HTTP_200_OK,
+    summary="Provider requests specific documents or case info from citizen",
+    description="Provider sets requested documents list for an interacted service request."
+)
+def request_documents(
+    request_id: int,
+    doc_req_in: DocumentRequestInput,
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> RequestProviderOut:
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
+
+    interaction = db.query(RequestProvider).filter(
+        RequestProvider.request_id == request_id,
+        RequestProvider.provider_id == provider.id
+    ).first()
+    if not interaction:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You have not expressed interest in this service request")
+
+    interaction.requested_documents = doc_req_in.requested_documents.strip()
+    db.commit()
+    db.refresh(interaction)
+
+    return interaction
+
+
+@router.get(
+    "/{request_id}/interested-providers",
+    response_model=List[InterestedProviderOut],
+    status_code=status.HTTP_200_OK,
+    summary="List providers who expressed interest in citizen's service request",
+    description="Retrieves interested providers for a request. Access allowed to citizen owner or admin."
+)
+def get_interested_providers(
+    request_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> List[InterestedProviderOut]:
+    req = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
+
+    if req.citizen_id != current_user.id and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to view interested providers for this request")
+
+    interactions = db.query(RequestProvider).filter(
+        RequestProvider.request_id == request_id
+    ).all()
+
+    results = []
+    for inter in interactions:
+        p = inter.provider
+        if p:
+            results.append(
+                InterestedProviderOut(
+                    provider_id=p.id,
+                    full_name=p.full_name,
+                    provider_type=p.provider_type,
+                    phone=p.phone,
+                    location=p.location,
+                    experience_years=p.experience_years,
+                    bio=p.bio,
+                    rating=p.rating,
+                    verification_status=p.verification_status.value if p.verification_status else "PENDING",
+                    reliability_score=p.reliability_score,
+                    interaction_status=inter.status,
+                    requested_documents=inter.requested_documents,
+                )
+            )
+
+    return results
+
+
+@router.post(
+    "/{request_id}/accept-provider/{provider_id}",
+    response_model=ServiceRequestOut,
+    status_code=status.HTTP_200_OK,
+    summary="Citizen accepts/assigns an advocate provider for their service request",
+    description="Citizen accepts provider interest. Updates interaction status to ACCEPTED and request status to IN_PROGRESS."
+)
+def accept_provider(
+    request_id: int,
+    provider_id: int,
+    current_user: User = Depends(require_citizen),
+    db: Session = Depends(get_db)
+) -> ServiceRequestOut:
+    req = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
+
+    if req.citizen_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to accept providers for this request")
+
+    target_interaction = db.query(RequestProvider).filter(
+        RequestProvider.request_id == request_id,
+        RequestProvider.provider_id == provider_id
+    ).first()
+    if not target_interaction:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider has not expressed interest in this request")
+
+    # Set target interaction to ACCEPTED and request status to IN_PROGRESS
+    target_interaction.status = InteractionStatus.ACCEPTED
+    req.status = RequestStatus.IN_PROGRESS
+
+    db.commit()
+    db.refresh(req)
+
+    return req
+

@@ -276,19 +276,19 @@ export const CitizenDashboardPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Link to={`/citizen/matches/${req.id}`}>
-                      <Button variant="primary" size="sm" rightIcon={<Sparkles className="w-3.5 h-3.5" />}>
-                        View Matches
-                      </Button>
-                    </Link>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link to={`/citizen/requests/${req.id}`}>
+                        <Button variant="primary" size="sm" rightIcon={<UserCheck className="w-3.5 h-3.5" />}>
+                          Advocates & Case Workspace
+                        </Button>
+                      </Link>
 
-                    <Link to={`/citizen/requests/${req.id}`}>
-                      <Button variant="secondary" size="sm" rightIcon={<ExternalLink className="w-3.5 h-3.5" />}>
-                        Details
-                      </Button>
-                    </Link>
-                  </div>
+                      <Link to={`/citizen/matches/${req.id}`}>
+                        <Button variant="secondary" size="sm" rightIcon={<Sparkles className="w-3.5 h-3.5" />}>
+                          Matches
+                        </Button>
+                      </Link>
+                    </div>
                 </div>
               ))}
             </div>

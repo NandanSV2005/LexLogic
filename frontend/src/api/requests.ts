@@ -5,6 +5,7 @@ import {
   RequestUrgency,
   RequestStatus,
   InteractionStatus,
+  InterestedProvider,
 } from '../types';
 
 export interface CreateServiceRequestData {
@@ -61,5 +62,22 @@ export const requestsApi = {
     const response = await apiClient.get<ServiceRequest[]>('/api/requests/provider/my-cases');
     return response.data;
   },
+
+  requestDocuments: async (requestId: number, requestedDocuments: string): Promise<void> => {
+    await apiClient.post(`/api/requests/${requestId}/request-documents`, {
+      requested_documents: requestedDocuments,
+    });
+  },
+
+  getInterestedProviders: async (requestId: number): Promise<InterestedProvider[]> => {
+    const response = await apiClient.get<InterestedProvider[]>(`/api/requests/${requestId}/interested-providers`);
+    return response.data;
+  },
+
+  acceptProvider: async (requestId: number, providerId: number): Promise<ServiceRequest> => {
+    const response = await apiClient.post<ServiceRequest>(`/api/requests/${requestId}/accept-provider/${providerId}`);
+    return response.data;
+  },
 };
+
 
