@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
 import enum
+from typing import Optional
 from sqlalchemy import String, Integer, DateTime, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
+
 
 
 class PointAction(str, enum.Enum):
@@ -21,10 +23,12 @@ class PointTransaction(Base):
     provider_id: Mapped[int] = mapped_column(ForeignKey("providers.id"), nullable=False, index=True)
     action: Mapped[PointAction] = mapped_column(SQLEnum(PointAction), nullable=False)
     points: Mapped[int] = mapped_column(Integer, nullable=False)
+    reference_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
+
 
     # Relationships
     provider: Mapped["Provider"] = relationship("Provider", back_populates="point_transactions")

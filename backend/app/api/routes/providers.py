@@ -12,7 +12,9 @@ from app.models.provider import (
     ProviderFieldDefinition,
     ProviderFieldValue,
 )
-from app.models.points import PointTransaction
+from app.models.points import PointTransaction, PointAction
+from app.services.points_service import award_points
+
 from app.schemas.provider import (
     ProviderProfileCreate,
     ProviderProfileUpdate,
@@ -167,8 +169,10 @@ def update_my_provider_profile(
         provider.bio = profile_in.bio
     if profile_in.availability_status is not None:
         provider.availability_status = profile_in.availability_status
+        award_points(db, provider, PointAction.AVAILABILITY_ADDED)
 
     db.commit()
+
 
     if profile_in.field_values:
         field_dicts = [fv.model_dump() for fv in profile_in.field_values]

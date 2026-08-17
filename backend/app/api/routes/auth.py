@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.rate_limiter import check_auth_rate_limit
 from app.api.deps import get_current_active_user
 from app.models.user import User, UserRole
 from app.models.provider import Provider, ProviderType, VerificationStatus, AvailabilityStatus
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     "/register",
     response_model=UserOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(check_auth_rate_limit)],
     summary="Register a new user account (Citizen or Provider)",
     description="Registers a new Citizen or Provider user account. Public registration as ADMIN is prohibited."
 )
@@ -23,6 +25,7 @@ def register(
     user_in: UserRegister,
     db: Session = Depends(get_db)
 ) -> UserOut:
+
     # 1. Prohibit public registration as ADMIN
     if user_in.role == UserRole.ADMIN:
         raise HTTPException(
@@ -80,9 +83,11 @@ def register(
     "/login",
     response_model=Token,
     status_code=status.HTTP_200_OK,
+    dependencies=[Depends(check_auth_rate_limit)],
     summary="User login with JSON payload",
     description="Authenticates user credentials using JSON body and returns a JWT access token."
 )
+
 def login(
     login_data: UserLogin,
     db: Session = Depends(get_db)

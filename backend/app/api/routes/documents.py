@@ -10,6 +10,7 @@ from app.models.provider import Provider
 from app.models.document import Document, DocumentVisibility, DocumentShare, DocumentShareStatus
 from app.schemas.document import DocumentOut, DocumentShareCreate, DocumentShareRevoke, DocumentShareOut
 from app.services.document_storage import validate_and_save_upload_file
+from app.core.rate_limiter import check_upload_rate_limit
 from app.services.audit import log_audit
 
 router = APIRouter(prefix="/documents", tags=["Secure Private Documents"])
@@ -19,6 +20,7 @@ router = APIRouter(prefix="/documents", tags=["Secure Private Documents"])
     "/upload",
     response_model=DocumentOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(check_upload_rate_limit)],
     summary="Upload secure private document (alias)",
     description="Uploads PDF, JPG, or PNG document. owner_id is bound strictly to the authenticated user. File is stored in private disk storage."
 )
@@ -26,9 +28,11 @@ router = APIRouter(prefix="/documents", tags=["Secure Private Documents"])
     "",
     response_model=DocumentOut,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(check_upload_rate_limit)],
     summary="Upload secure private document",
     description="Uploads PDF, JPG, or PNG document. owner_id is bound strictly to the authenticated user. File is stored in private disk storage."
 )
+
 
 async def upload_document(
     file: UploadFile = File(...),

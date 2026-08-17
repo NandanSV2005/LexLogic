@@ -72,7 +72,7 @@ def respond_to_request(
     db.refresh(interaction)
 
     # Award points for responding (+10 points)
-    award_points(db, provider, PointAction.REQUEST_RESPONDED)
+    award_points(db, provider, PointAction.REQUEST_RESPONDED, reference_id=req.id)
 
     # Recalculate reliability score
     calculate_reliability_score(provider)
@@ -105,14 +105,15 @@ def complete_service_request(
         provider.completed_requests += 1
 
         # Award standard completion reward (+20 points)
-        award_points(db, provider, PointAction.SERVICE_COMPLETED)
+        award_points(db, provider, PointAction.SERVICE_COMPLETED, reference_id=req.id)
 
         # If flagged for legal aid interest, award pro-bono incentive (+30 points)
         if req.legal_aid_interest:
-            award_points(db, provider, PointAction.PRO_BONO_COMPLETED)
+            award_points(db, provider, PointAction.PRO_BONO_COMPLETED, reference_id=req.id)
 
         # Recalculate provider reliability score
         calculate_reliability_score(provider)
+
 
     db.commit()
     db.refresh(req)

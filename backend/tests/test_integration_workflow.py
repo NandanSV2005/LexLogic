@@ -80,10 +80,11 @@ def test_e2e_provider_onboarding_and_dashboard_workflow(client, setup_database):
     assert updated_data["profile_completion_percentage"] == 100.0
     assert updated_data["is_profile_complete"] is True
 
-    # 7. Verify profile-completion points (+20 points)
+    # 7. Verify profile-completion & availability update points (+20 profile + 10 availability = 30 points)
     pts_res = client.get("/api/providers/me/points", headers=headers)
     assert pts_res.status_code == 200
-    assert pts_res.json()["total_points"] == 20
+    assert pts_res.json()["total_points"] == 30
+
 
     # 8. Provider submits verification
     ver_res = client.post("/api/providers/me/verification", headers=headers)
@@ -109,8 +110,9 @@ def test_e2e_provider_onboarding_and_dashboard_workflow(client, setup_database):
     dash_data = dash_res.json()
     assert dash_data["full_name"] == "Advocate Vikramaditya Singh"
     assert dash_data["is_profile_complete"] is True
-    assert dash_data["points"] == 20
+    assert dash_data["points"] == 30
     assert dash_data["verification_status"] == "VERIFIED"
+
     assert dash_data["availability_status"] == "AVAILABLE"
     assert dash_data["reliability_score"] > 80.0
 
