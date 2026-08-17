@@ -22,6 +22,11 @@ class DocumentShareStatus(str, enum.Enum):
     REVOKED = "REVOKED"
 
 
+class DocumentSharePermission(str, enum.Enum):
+    VIEW = "VIEW"
+    VIEW_AND_DOWNLOAD = "VIEW_AND_DOWNLOAD"
+
+
 class Document(Base):
     """Document metadata model (stores private file reference, mime type, size, visibility status)."""
     __tablename__ = "documents"
@@ -63,6 +68,10 @@ class DocumentShare(Base):
     status: Mapped[DocumentShareStatus] = mapped_column(
         SQLEnum(DocumentShareStatus), default=DocumentShareStatus.ACTIVE, nullable=False
     )
+    permission: Mapped[DocumentSharePermission] = mapped_column(
+        SQLEnum(DocumentSharePermission), default=DocumentSharePermission.VIEW, nullable=False
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )

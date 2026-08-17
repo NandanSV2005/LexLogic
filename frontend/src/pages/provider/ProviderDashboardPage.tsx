@@ -9,6 +9,7 @@ import { LoadingState } from '../../components/common/LoadingState';
 import { ErrorState } from '../../components/common/ErrorState';
 import { EmptyState } from '../../components/common/EmptyState';
 import { providersApi, requestsApi } from '../../api';
+import { getProviderProfessionConfig } from '../../config/providerConfig';
 import {
   Provider,
   ProviderDashboardMetrics,
@@ -29,11 +30,11 @@ import {
   Edit3,
   TrendingUp,
   Send,
-  Check,
   Eye,
   X,
   Briefcase,
-  AlertCircle,
+  HelpCircle,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const ProviderDashboardPage: React.FC = () => {
@@ -51,6 +52,7 @@ export const ProviderDashboardPage: React.FC = () => {
   const [isSubmittingVerification, setIsSubmittingVerification] = useState<boolean>(false);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [selectedCase, setSelectedCase] = useState<ServiceRequest | null>(null);
+  const [confirmExpressInterestReq, setConfirmExpressInterestReq] = useState<ServiceRequest | null>(null);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -88,6 +90,8 @@ export const ProviderDashboardPage: React.FC = () => {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const profConfig = getProviderProfessionConfig(profile?.provider_type);
 
   const handleToggleAvailability = async (targetStatus: AvailabilityStatus) => {
     if (!profile || profile.availability_status === targetStatus) return;
@@ -127,13 +131,14 @@ export const ProviderDashboardPage: React.FC = () => {
     }
   };
 
-  const handleRespondRequest = async (requestId: number) => {
+  const handleRespondRequestConfirmed = async (requestId: number) => {
     setActionLoadingId(requestId);
     setErrorMessage(null);
+    setConfirmExpressInterestReq(null);
 
     try {
       await requestsApi.respondToRequest(requestId, 'ACCEPT');
-      setSuccessMessage(`Expressed interest in Request #${requestId}! Added to Current Cases.`);
+      setSuccessMessage(`Expressed interest in Request #${requestId}! Added to ${profConfig.activeWorkLabel}.`);
       await fetchDashboardData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to express interest in request.');
@@ -160,7 +165,7 @@ export const ProviderDashboardPage: React.FC = () => {
   const renderVerificationBadge = (status?: VerificationStatus) => {
     switch (status) {
       case VerificationStatus.VERIFIED:
-        return <Badge variant="success">Verified Provider</Badge>;
+        return <Badge variant="success">Verified {profConfig.label}</Badge>;
       case VerificationStatus.SUBMITTED:
         return <Badge variant="warning">Submitted for Review</Badge>;
       case VerificationStatus.REJECTED:
@@ -209,13 +214,15 @@ export const ProviderDashboardPage: React.FC = () => {
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight">
-                {profile?.full_name || 'Provider Portal'}
+                {profile?.full_name || `${profConfig.label} Portal`}
               </h1>
-              <Badge variant="purple">{profile?.provider_type || 'PROVIDER'}</Badge>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${profConfig.badgeBg}`}>
+                {profConfig.professionTitle}
+              </span>
               {renderVerificationBadge(profile?.verification_status)}
             </div>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Provider workspace for request matching, active case management, and incentives.
+              Workspace for {profConfig.label.toLowerCase()} request matching, {profConfig.activeWorkLabel.toLowerCase()} management, and incentive tracking.
             </p>
           </div>
 
@@ -258,7 +265,7 @@ export const ProviderDashboardPage: React.FC = () => {
 
         {isLoading && (
           <div className="py-20">
-            <LoadingState message="Fetching provider metrics & profile data..." />
+            <LoadingState message={`Fetching ${profConfig.label} metrics & profile data...`} />
           </div>
         )}
 
@@ -269,7 +276,7 @@ export const ProviderDashboardPage: React.FC = () => {
               <Card className="p-5 border-slate-800 bg-slate-900/90 shadow-xl">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    My Active Cases
+                    {profConfig.activeWorkLabel}
                   </span>
                   <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg">
                     <Briefcase className="w-4 h-4" />
@@ -278,13 +285,13 @@ export const ProviderDashboardPage: React.FC = () => {
                 <span className="text-2xl font-bold text-slate-100 mt-2 block">
                   {myCases.length}
                 </span>
-                <span className="text-[11px] text-slate-500 mt-1 block">Interacted requests</span>
+                <span className="text-[11px] text-slate-500 mt-1 block">Active engagements</span>
               </Card>
 
               <Card className="p-5 border-slate-800 bg-slate-900/90 shadow-xl">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    Completed Cases
+                    {profConfig.completionLabel}
                   </span>
                   <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg">
                     <CheckCircle2 className="w-4 h-4" />
@@ -294,7 +301,7 @@ export const ProviderDashboardPage: React.FC = () => {
                   {metrics.completed_requests}
                 </span>
                 <span className="text-[11px] text-emerald-400 mt-1 block font-medium">
-                  {metrics.completed_requests > 0 ? 'Case resolution active' : 'No resolutions yet'}
+                  {metrics.completed_requests > 0 ? 'Resolution active' : 'No resolutions yet'}
                 </span>
               </Card>
 
@@ -428,7 +435,7 @@ export const ProviderDashboardPage: React.FC = () => {
                     </div>
                   ) : profile.verification_status === VerificationStatus.VERIFIED ? (
                     <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-300 text-xs text-center font-medium">
-                      ✓ Profile is fully verified for legal service delivery
+                      ✓ Profile is fully verified for service delivery
                     </div>
                   ) : (
                     <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-300 text-xs text-center font-medium">
@@ -439,23 +446,23 @@ export const ProviderDashboardPage: React.FC = () => {
               </Card>
             </div>
 
-            {/* CURRENT CASES ("MY CASES") SECTION */}
+            {/* CURRENT ACTIVE WORK FEED */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-slate-100 tracking-tight flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-indigo-400" /> Current Cases ({myCases.length})
+                    <Briefcase className="w-5 h-5 text-indigo-400" /> {profConfig.activeWorkLabel} ({myCases.length})
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Service requests where you have expressed interest or engaged.
+                    Service requests where you have expressed interest or engaged as a {profConfig.label}.
                   </p>
                 </div>
               </div>
 
               {myCases.length === 0 ? (
                 <EmptyState
-                  title="No Active Cases Yet"
-                  description="Click 'Express Interest' on eligible requests below to add requests to your current cases feed."
+                  title={`No ${profConfig.activeWorkLabel} Yet`}
+                  description={`Click 'Express Interest' on eligible ${profConfig.requestLabel.toLowerCase()} below to add items to your active feed.`}
                 />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -467,7 +474,7 @@ export const ProviderDashboardPage: React.FC = () => {
                           <Badge variant="info">{req.service_category}</Badge>
                         </div>
                         <Badge variant="success">
-                          {req.status === 'IN_PROGRESS' ? 'CASE ASSIGNED' : 'INTEREST EXPRESSED'}
+                          {req.status === 'IN_PROGRESS' ? 'ASSIGNED' : 'INTEREST EXPRESSED'}
                         </Badge>
                       </div>
 
@@ -526,18 +533,18 @@ export const ProviderDashboardPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-slate-100 tracking-tight">
-                    Eligible Service Requests ({eligibleRequests.length})
+                    {profConfig.eligibleRequestsHeading} ({eligibleRequests.length})
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Open citizen requests matching your category ({profile.provider_type}) that you haven't responded to yet.
+                    Open citizen requests matching your profession ({profConfig.label}) that you haven't responded to yet.
                   </p>
                 </div>
               </div>
 
               {eligibleRequests.length === 0 ? (
                 <EmptyState
-                  title="No Eligible Requests Available"
-                  description={`No open service requests match your category (${profile.provider_type}) currently.`}
+                  title={`No ${profConfig.eligibleRequestsHeading} Available`}
+                  description={`No open service requests match your profession category (${profConfig.label}) currently.`}
                 />
               ) : (
                 <div className="grid grid-cols-1 gap-4">
@@ -570,7 +577,7 @@ export const ProviderDashboardPage: React.FC = () => {
                             variant="primary"
                             size="sm"
                             isLoading={actionLoadingId === req.id}
-                            onClick={() => handleRespondRequest(req.id)}
+                            onClick={() => setConfirmExpressInterestReq(req)}
                             leftIcon={<Send className="w-3.5 h-3.5" />}
                           >
                             Express Interest
@@ -626,6 +633,74 @@ export const ProviderDashboardPage: React.FC = () => {
         )}
       </main>
 
+      {/* CONFIRM EXPRESS INTEREST MODAL */}
+      {confirmExpressInterestReq && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <Card className="max-w-md w-full p-6 border-slate-800 bg-slate-900 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Send className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-base font-bold text-slate-100">
+                  Confirm Express Interest
+                </h3>
+              </div>
+              <button
+                onClick={() => setConfirmExpressInterestReq(null)}
+                className="text-slate-400 hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <p className="text-slate-300">
+                Are you sure you want to express interest in this request as a <strong className="text-indigo-400">{profConfig.label}</strong>?
+              </p>
+
+              <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-200">Request #{confirmExpressInterestReq.id}</span>
+                  <Badge variant="info">{confirmExpressInterestReq.service_category}</Badge>
+                </div>
+                <p className="text-slate-400 line-clamp-2">
+                  "{confirmExpressInterestReq.description}"
+                </p>
+                <div className="flex items-center gap-3 text-[11px] text-slate-500 pt-1">
+                  <span>Location: {confirmExpressInterestReq.location}</span>
+                  <span>Urgency: {confirmExpressInterestReq.urgency}</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-[11px] flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <span>
+                  Expressing interest notifies the citizen and adds this item to your <strong>{profConfig.activeWorkLabel}</strong>. It does NOT automatically grant document access.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmExpressInterestReq(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                isLoading={actionLoadingId === confirmExpressInterestReq.id}
+                onClick={() => handleRespondRequestConfirmed(confirmExpressInterestReq.id)}
+                leftIcon={<Send className="w-3.5 h-3.5" />}
+              >
+                Express Interest
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* CASE DETAILS MODAL */}
       {selectedCase && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
@@ -634,7 +709,7 @@ export const ProviderDashboardPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-indigo-400" />
                 <h3 className="text-base font-bold text-slate-100">
-                  Case Details — Request #{selectedCase.id}
+                  {profConfig.label} Case Details — Request #{selectedCase.id}
                 </h3>
               </div>
               <button
@@ -652,7 +727,7 @@ export const ProviderDashboardPage: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-slate-500 font-semibold uppercase text-[10px] block">Legal Need Description</span>
+                <span className="text-slate-500 font-semibold uppercase text-[10px] block">Service Need Description</span>
                 <p className="text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800">
                   {selectedCase.description}
                 </p>
@@ -740,5 +815,3 @@ export const ProviderDashboardPage: React.FC = () => {
     </div>
   );
 };
-
-

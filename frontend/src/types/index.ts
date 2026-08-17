@@ -200,6 +200,21 @@ export enum DocumentShareStatus {
   REVOKED = "REVOKED",
 }
 
+export enum DocumentSharePermission {
+  VIEW = "VIEW",
+  VIEW_AND_DOWNLOAD = "VIEW_AND_DOWNLOAD",
+}
+
+export interface DocumentShareItem {
+  id: number;
+  document_id: number;
+  shared_with_provider_id: number;
+  status: DocumentShareStatus;
+  permission: DocumentSharePermission;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface DocumentItem {
   id: number;
   owner_id: number;
@@ -211,16 +226,10 @@ export interface DocumentItem {
   visibility: DocumentVisibility;
   created_at: string;
   updated_at?: string;
+  shares?: DocumentShareItem[];
+  current_user_permission?: DocumentSharePermission;
 }
 
-export interface DocumentShareItem {
-  id: number;
-  document_id: number;
-  shared_with_provider_id: number;
-  status: DocumentShareStatus;
-  created_at: string;
-  updated_at?: string;
-}
 
 export interface AuditLogItem {
   id: number;

@@ -20,6 +20,11 @@ import {
   Trash2,
   Download,
   Plus,
+  Eye,
+  ShieldAlert,
+  Key,
+  X,
+  RefreshCw,
 } from 'lucide-react';
 import { Navbar } from '../../components/layout/Navbar';
 import { Card } from '../../components/common/Card';
@@ -35,6 +40,9 @@ import {
   InterestedProvider,
   DocumentItem,
   InteractionStatus,
+  DocumentSharePermission,
+  DocumentVisibility,
+  DocumentShareStatus,
 } from '../../types';
 
 interface PendingUploadItem {
@@ -54,12 +62,17 @@ export const RequestDetailsPage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
-  // Multi-Document Upload State
+  // Multi-Document Upload & Permission State
   const [pendingItems, setPendingItems] = useState<PendingUploadItem[]>([]);
+  const [sharePermission, setSharePermission] = useState<DocumentSharePermission>(DocumentSharePermission.VIEW);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgressMessage, setUploadProgressMessage] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+
+  // Manage Access Modal State
+  const [managingDoc, setManagingDoc] = useState<DocumentItem | null>(null);
+  const [isRevokingProviderId, setIsRevokingProviderId] = useState<number | null>(null);
 
   const fetchRequestDetails = async () => {
     if (!requestId || isNaN(Number(requestId))) {
@@ -100,14 +113,13 @@ export const RequestDetailsPage: React.FC = () => {
   }, [requestId]);
 
   const handleAcceptProvider = async (providerId: number) => {
-    if (!request) return;
+    if (!requestId) return;
     setActionLoadingId(providerId);
     setErrorMessage(null);
 
     try {
-      const updatedReq = await requestsApi.acceptProvider(request.id, providerId);
-      setRequest(updatedReq);
-      setSuccessMessage('Advocate accepted! Case is now active and in progress.');
+      await requestsApi.acceptProvider(Number(requestId), providerId);
+      setSuccessMessage('Provider interest ACCEPTED! Representation initiated.');
       await fetchRequestDetails();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to accept provider.');
@@ -116,24 +128,36 @@ export const RequestDetailsPage: React.FC = () => {
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    setUploadError(null);
-    setUploadSuccess(null);
+  const handleDeclineProvider = async (providerId: number) => {
+    if (!requestId) return;
+    setActionLoadingId(providerId);
+    setErrorMessage(null);
 
-    const newFiles = Array.from(e.target.files).map((file) => ({
-      id: Math.random().toString(36).substring(2, 9),
-      file,
-      title: file.name.replace(/\.[^/.]+$/, ''), // Clean default title
-    }));
-
-    setPendingItems((prev) => [...prev, ...newFiles]);
-    // Reset file input value so user can pick the same file again if needed
-    e.target.value = '';
+    try {
+      await requestsApi.acceptProvider(Number(requestId), providerId);
+      setSuccessMessage('Provider updated.');
+      await fetchRequestDetails();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to update provider.');
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
-  const handleRemovePendingItem = (id: string) => {
-    setPendingItems((prev) => prev.filter((item) => item.id !== id));
+  // Multi-Document Queue Management
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const newFiles = Array.from(e.target.files);
+    const newItems: PendingUploadItem[] = newFiles.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      file,
+      title: file.name.replace(/\.[^/.]+$/, ''),
+    }));
+
+    setPendingItems((prev) => [...prev, ...newItems]);
+    setUploadError(null);
+    e.target.value = '';
   };
 
   const handleTitleChange = (id: string, newTitle: string) => {
@@ -142,9 +166,12 @@ export const RequestDetailsPage: React.FC = () => {
     );
   };
 
+  const handleRemovePendingItem = (id: string) => {
+    setPendingItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
   const handleBatchUploadAndShare = async (e: React.FormEvent, providerId: number) => {
     e.preventDefault();
-
     if (pendingItems.length === 0) {
       setUploadError('Please select at least one document to upload.');
       return;
@@ -154,102 +181,134 @@ export const RequestDetailsPage: React.FC = () => {
     setUploadError(null);
     setUploadSuccess(null);
 
-    try {
-      let successCount = 0;
+    const uploadedDocs: DocumentItem[] = [];
+    const errors: string[] = [];
 
-      for (let i = 0; i < pendingItems.length; i++) {
-        const item = pendingItems[i];
-        const docTitle = item.title.trim() || item.file.name;
+    for (let i = 0; i < pendingItems.length; i++) {
+      const item = pendingItems[i];
+      setUploadProgressMessage(`Uploading file ${i + 1} of ${pendingItems.length}: ${item.title}...`);
 
-        setUploadProgressMessage(`Uploading & attaching document ${i + 1} of ${pendingItems.length}: "${docTitle}"...`);
+      try {
+        const doc = await documentsApi.uploadDocument(item.title, item.file);
+        uploadedDocs.push(doc);
 
-        // 1. Upload Document to Private Vault
-        const newDoc = await documentsApi.uploadDocument(docTitle, item.file);
-
-        // 2. Explicitly Share with Advocate Provider
-        await documentsApi.shareDocument(newDoc.id, providerId);
-        successCount++;
+        await documentsApi.shareDocument(doc.id, providerId, sharePermission);
+      } catch (err: any) {
+        errors.push(`Failed to upload ${item.file.name}: ${err.message || 'Upload error'}`);
       }
+    }
 
-      setUploadSuccess(`Successfully uploaded and shared ${successCount} document(s) with Advocate!`);
+    setIsUploading(false);
+    setUploadProgressMessage(null);
+
+    if (uploadedDocs.length > 0) {
+      setUploadSuccess(
+        `Successfully uploaded and shared ${uploadedDocs.length} document(s) with ${sharePermission === DocumentSharePermission.VIEW_AND_DOWNLOAD ? 'View + Download' : 'View Only'} permission!`
+      );
       setPendingItems([]);
       await fetchRequestDetails();
+    }
+
+    if (errors.length > 0) {
+      setUploadError(errors.join(' | '));
+    }
+  };
+
+  const handleRevokeShare = async (documentId: number, providerId: number) => {
+    setIsRevokingProviderId(providerId);
+    try {
+      await documentsApi.revokeDocument(documentId, providerId);
+      setSuccessMessage('Document access revoked successfully.');
+      await fetchRequestDetails();
+      if (managingDoc && managingDoc.id === documentId) {
+        const updatedDocs = await documentsApi.listMyDocuments();
+        const updated = updatedDocs.find((d) => d.id === documentId);
+        if (updated) setManagingDoc(updated);
+      }
     } catch (err: any) {
-      setUploadError(err.message || 'Failed to upload and share document.');
+      setErrorMessage(err.message || 'Failed to revoke document access.');
     } finally {
-      setIsUploading(false);
-      setUploadProgressMessage(null);
+      setIsRevokingProviderId(null);
     }
   };
 
-  const renderStatusBadge = (status: RequestStatus) => {
-    switch (status) {
-      case RequestStatus.OPEN:
-        return <Badge variant="info">Open Request</Badge>;
-      case RequestStatus.MATCHED:
-        return <Badge variant="purple">Providers Matched</Badge>;
-      case RequestStatus.CONTACTED:
-        return <Badge variant="warning">Contacted</Badge>;
-      case RequestStatus.IN_PROGRESS:
-        return <Badge variant="primary">In Progress</Badge>;
-      case RequestStatus.COMPLETED:
-        return <Badge variant="success">Completed</Badge>;
-      case RequestStatus.CANCELLED:
-        return <Badge variant="danger">Cancelled</Badge>;
-      default:
-        return <Badge variant="neutral">{status}</Badge>;
+  const renderSecurityStatusBadge = (doc: DocumentItem) => {
+    if (doc.visibility === DocumentVisibility.PRIVATE) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+          <Lock className="w-3 h-3 text-slate-400" /> Private
+        </span>
+      );
     }
-  };
 
-  const statusSteps: Array<{ key: RequestStatus; label: string }> = [
-    { key: RequestStatus.OPEN, label: 'Open' },
-    { key: RequestStatus.MATCHED, label: 'Matched' },
-    { key: RequestStatus.CONTACTED, label: 'Contacted' },
-    { key: RequestStatus.IN_PROGRESS, label: 'In Progress' },
-    { key: RequestStatus.COMPLETED, label: 'Completed' },
-  ];
+    if (doc.visibility === DocumentVisibility.REVOKED) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20">
+          <ShieldAlert className="w-3 h-3 text-rose-400" /> Access Revoked
+        </span>
+      );
+    }
 
-  const getStepState = (stepKey: RequestStatus, currentStatus: RequestStatus) => {
-    if (currentStatus === RequestStatus.CANCELLED) return 'cancelled';
-    const order = [
-      RequestStatus.OPEN,
-      RequestStatus.MATCHED,
-      RequestStatus.CONTACTED,
-      RequestStatus.IN_PROGRESS,
-      RequestStatus.COMPLETED,
-    ];
-    const currentIndex = order.indexOf(currentStatus);
-    const stepIndex = order.indexOf(stepKey);
+    const hasDownloadShare = doc.shares?.some(
+      (s) => s.status === DocumentShareStatus.ACTIVE && s.permission === DocumentSharePermission.VIEW_AND_DOWNLOAD
+    );
 
-    if (stepIndex < currentIndex) return 'completed';
-    if (stepIndex === currentIndex) return 'current';
-    return 'upcoming';
+    if (hasDownloadShare) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+          <Download className="w-3 h-3 text-emerald-400" /> Shared — View + Download
+        </span>
+      );
+    }
+
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+        <Eye className="w-3 h-3 text-indigo-400" /> Shared — View Only
+      </span>
+    );
   };
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col">
       <Navbar />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        <Link
-          to="/citizen/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Citizen Dashboard
-        </Link>
-
-        {isLoading && (
-          <div className="py-20">
-            <LoadingState message="Loading service request details..." />
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <Link
+              to="/citizen/dashboard"
+              className="inline-flex items-center text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors mb-2 gap-1"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight">
+                Request Details #{requestId}
+              </h1>
+              {request && (
+                <Badge variant={request.status === RequestStatus.COMPLETED ? 'success' : 'info'}>
+                  {request.status}
+                </Badge>
+              )}
+            </div>
           </div>
-        )}
 
-        {errorMessage && !isLoading && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchRequestDetails}
+            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+          >
+            Refresh Details
+          </Button>
+        </div>
+
+        {errorMessage && (
           <ErrorState
-            title="Access Error"
+            title="Error Loading Request"
             message={errorMessage}
             onRetry={fetchRequestDetails}
-            className="my-4"
           />
         )}
 
@@ -265,238 +324,227 @@ export const RequestDetailsPage: React.FC = () => {
           </div>
         )}
 
+        {isLoading && (
+          <div className="py-20">
+            <LoadingState message="Fetching service request & provider responses..." />
+          </div>
+        )}
+
         {!isLoading && request && (
-          <div className="space-y-6">
-            {/* Header Title Card */}
-            <Card className="p-6 border-slate-800 bg-slate-900/90 shadow-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
-                      Service Request #{request.id}
-                    </span>
-                    {renderStatusBadge(request.status)}
-                  </div>
-                  <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
-                    {request.service_category}
-                  </h1>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <Link to={`/citizen/matches/${request.id}`}>
-                    <Button variant="primary" size="md" rightIcon={<Sparkles className="w-4 h-4" />}>
-                      View Matched Providers
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-
-              {/* PROGRESS STEPPER */}
-              <div className="pt-6">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-4">
-                  Request Lifecycle Progression
-                </span>
-
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
-                  {statusSteps.map((step) => {
-                    const state = getStepState(step.key, request.status);
-                    return (
-                      <div
-                        key={step.key}
-                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border text-xs transition-all ${
-                          state === 'completed'
-                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                            : state === 'current'
-                            ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 font-bold ring-1 ring-indigo-500/40'
-                            : 'bg-slate-950 border-slate-800 text-slate-500'
-                        }`}
-                      >
-                        {state === 'completed' ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        ) : state === 'current' ? (
-                          <div className="w-4 h-4 rounded-full border-2 border-indigo-400 border-t-transparent animate-spin" />
-                        ) : (
-                          <div className="w-3.5 h-3.5 rounded-full border border-slate-700 bg-slate-900" />
-                        )}
-                        <span>{step.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </Card>
-
-            {/* INTERESTED ADVOCATES / PROVIDERS SECTION */}
+          <div className="space-y-8">
+            {/* Interested Providers Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-bold text-slate-100 tracking-tight flex items-center gap-2">
-                    <UserCheck className="w-5 h-5 text-indigo-400" />
-                    Advocates Interested in Your Case ({interestedProviders.length})
+                    <UserCheck className="w-5 h-5 text-indigo-400" /> Interested Legal Providers ({interestedProviders.length})
                   </h2>
                   <p className="text-xs text-slate-400">
-                    Advocates who have expressed interest in assisting with your legal requirement.
+                    Providers who have expressed interest in fighting your case or assisting your legal need.
                   </p>
                 </div>
               </div>
 
               {interestedProviders.length === 0 ? (
-                <Card className="p-6 border-slate-800 bg-slate-900/90 text-center space-y-2">
-                  <Clock className="w-8 h-8 text-slate-600 mx-auto" />
-                  <h3 className="text-sm font-bold text-slate-200">Awaiting Advocate Interest</h3>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    No advocates have expressed interest yet. Your request is visible in the eligible feed for matching advocates.
+                <Card className="p-8 text-center border-slate-800 bg-slate-900/50">
+                  <Clock className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+                  <h3 className="text-sm font-bold text-slate-300">No Providers Have Expressed Interest Yet</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Verified providers in your category are reviewing open requests. Check back soon.
                   </p>
                 </Card>
               ) : (
                 <div className="space-y-4">
                   {interestedProviders.map((prov) => {
                     const isAccepted = prov.interaction_status === InteractionStatus.ACCEPTED;
-
                     return (
                       <Card
                         key={prov.provider_id}
                         className={`p-6 border-slate-800 bg-slate-900/90 shadow-xl space-y-4 transition-all ${
-                          isAccepted ? 'border-indigo-500/50 ring-1 ring-indigo-500/30' : ''
+                          isAccepted ? 'ring-2 ring-emerald-500/50 bg-slate-900' : ''
                         }`}
                       >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 flex items-center justify-center font-bold text-lg">
-                              {prov.full_name.charAt(0)}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-2.5">
+                              <h3 className="text-base font-bold text-slate-100">{prov.full_name}</h3>
+                              <Badge variant="purple">{prov.provider_type}</Badge>
+                              {prov.verification_status === 'VERIFIED' && (
+                                <Badge variant="success">Verified Provider</Badge>
+                              )}
+                              {isAccepted && (
+                                <Badge variant="info" className="animate-pulse">
+                                  ✓ Agreed to Fight For You
+                                </Badge>
+                              )}
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h3 className="text-base font-bold text-slate-100">{prov.full_name}</h3>
-                                <Badge variant="purple">{prov.provider_type}</Badge>
-                                {prov.verification_status === 'VERIFIED' && (
-                                  <Badge variant="success">Verified</Badge>
-                                )}
-                              </div>
-                              <p className="text-xs text-slate-400 mt-0.5">
-                                {prov.experience_years} Years Experience • {prov.location || 'Location Not Specified'}
-                              </p>
+
+                            <p className="text-xs text-slate-300 max-w-2xl line-clamp-2">
+                              {prov.bio || 'Experienced legal provider dedicated to achieving optimal outcomes.'}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> {prov.location || 'Location upon request'}
+                              </span>
+                              <span>Experience: {prov.experience_years} years</span>
+                              <span>Reliability Score: <strong className="text-purple-300">{prov.reliability_score.toFixed(1)}/100</strong></span>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
-                            {isAccepted ? (
-                              <Badge variant="success">Assigned Advocate (Active Case)</Badge>
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
+                            {prov.interaction_status === InteractionStatus.PENDING ? (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  isLoading={actionLoadingId === prov.provider_id}
+                                  onClick={() => handleDeclineProvider(prov.provider_id)}
+                                >
+                                  Decline
+                                </Button>
+
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  isLoading={actionLoadingId === prov.provider_id}
+                                  onClick={() => handleAcceptProvider(prov.provider_id)}
+                                  leftIcon={<CheckCircle2 className="w-4 h-4" />}
+                                >
+                                  Accept & Engage Provider
+                                </Button>
+                              </>
+                            ) : prov.interaction_status === InteractionStatus.ACCEPTED ? (
+                              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Active Service Representation
+                              </div>
                             ) : (
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                isLoading={actionLoadingId === prov.provider_id}
-                                onClick={() => handleAcceptProvider(prov.provider_id)}
-                                leftIcon={<CheckCircle2 className="w-4 h-4" />}
-                              >
-                                Accept Advocate
-                              </Button>
+                              <Badge variant="neutral">Declined</Badge>
                             )}
                           </div>
                         </div>
 
-                        {/* ADVOCATE ACCEPTED BANNER */}
-                        {isAccepted && (
-                          <div className="p-4 bg-gradient-to-r from-emerald-950/80 to-slate-900 border border-emerald-500/30 rounded-2xl space-y-2">
-                            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-                              <CheckCircle2 className="w-5 h-5 shrink-0" />
-                              <span>{prov.full_name} has agreed to assist with your case!</span>
-                            </div>
-                            <p className="text-xs text-slate-300 leading-relaxed">
-                              You have accepted {prov.full_name} for this service request. You can now attach required documents below.
-                            </p>
-                            {prov.phone && (
-                              <div className="pt-1 flex items-center gap-2 text-xs text-emerald-300 font-semibold">
-                                <Phone className="w-4 h-4 text-emerald-400" />
-                                <span>Contact Phone: {prov.phone}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* REQUESTED DOCUMENTS CHECKLIST BANNER */}
-                        {prov.requested_documents && (
-                          <div className="p-4 bg-slate-950 border border-indigo-500/30 rounded-2xl space-y-2">
-                            <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs uppercase tracking-wide">
-                              <FileText className="w-4 h-4 text-indigo-400" />
-                              <span>Documents Requested by Advocate ({prov.full_name}):</span>
-                            </div>
-                            <p className="text-xs text-slate-200 font-medium bg-slate-900 p-3 rounded-xl border border-slate-800 leading-relaxed whitespace-pre-wrap">
-                              "{prov.requested_documents}"
-                            </p>
-                          </div>
-                        )}
-
-                        {/* MULTI-DOCUMENT UPLOAD & SHARE WORKSPACE */}
+                        {/* REQUESTED DOCUMENTS & DOCUMENT ATTACHMENT TAB */}
                         {isAccepted && (
                           <div className="pt-4 border-t border-slate-800 space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <FolderLock className="w-5 h-5 text-emerald-400" />
-                                <div>
-                                  <h4 className="text-sm font-bold text-slate-100">
-                                    Upload & Attach Required Documents
-                                  </h4>
-                                  <p className="text-xs text-slate-400">
-                                    Select single or multiple files (PDF / Image / Docs) to attach for Advocate {prov.full_name}.
-                                  </p>
+                            <div className="p-4 bg-slate-950 border border-indigo-500/30 rounded-xl space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <FolderLock className="w-4 h-4 text-indigo-400" />
+                                  <span className="text-xs font-bold text-slate-100 uppercase tracking-wider">
+                                    Provider Requested Documents
+                                  </span>
                                 </div>
+                                <span className="text-[11px] text-indigo-300 font-medium">
+                                  Explicit Authorization Required
+                                </span>
                               </div>
+
+                              <p className="text-xs text-slate-300 leading-relaxed">
+                                {prov.requested_documents
+                                  ? `Requested documents: "${prov.requested_documents}"`
+                                  : 'Provider has not specified custom documents yet. Upload and share your case documents below.'}
+                              </p>
                             </div>
 
-                            {/* INLINE ALERT FEEDBACK */}
-                            {uploadError && (
-                              <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs rounded-xl flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                                  <span>{uploadError}</span>
-                                </div>
-                                <button onClick={() => setUploadError(null)} className="text-slate-400 hover:text-slate-200">
-                                  ✕
-                                </button>
-                              </div>
-                            )}
-
-                            {uploadSuccess && (
-                              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs rounded-xl flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                                  <span>{uploadSuccess}</span>
-                                </div>
-                                <button onClick={() => setUploadSuccess(null)} className="text-slate-400 hover:text-slate-200">
-                                  ✕
-                                </button>
-                              </div>
-                            )}
-
-                            {uploadProgressMessage && (
-                              <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs rounded-xl flex items-center gap-2.5">
-                                <div className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin shrink-0" />
-                                <span>{uploadProgressMessage}</span>
-                              </div>
-                            )}
-
+                            {/* UPLOAD & SHARE FORM WITH PERMISSION CONTROL */}
                             <form
                               onSubmit={(e) => handleBatchUploadAndShare(e, prov.provider_id)}
-                              className="p-5 bg-slate-950 border border-slate-800 rounded-2xl space-y-4"
+                              className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl space-y-4"
                             >
-                              {/* FILE SELECTOR BUTTON */}
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-900/90 border border-dashed border-slate-800 rounded-xl">
-                                <div className="space-y-0.5">
-                                  <span className="text-xs font-semibold text-slate-200 block">
-                                    Select Files to Upload & Attach
-                                  </span>
-                                  <span className="text-[11px] text-slate-400 block">
-                                    You can select multiple files at once.
-                                  </span>
-                                </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                                  <Upload className="w-4 h-4 text-indigo-400" /> Attach Case Documents for {prov.full_name}
+                                </span>
+                              </div>
 
-                                <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl cursor-pointer transition-colors shadow-md shrink-0">
-                                  <Plus className="w-4 h-4" /> Select Document Files
+                              {/* PERMISSION SELECTOR: VIEW ONLY vs VIEW + DOWNLOAD */}
+                              <div className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl space-y-2">
+                                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide block">
+                                  Select Explicit Permission Level:
+                                </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                  <label
+                                    className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start gap-2.5 ${
+                                      sharePermission === DocumentSharePermission.VIEW
+                                        ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300 font-semibold'
+                                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                                    }`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="share_permission"
+                                      value={DocumentSharePermission.VIEW}
+                                      checked={sharePermission === DocumentSharePermission.VIEW}
+                                      onChange={() => setSharePermission(DocumentSharePermission.VIEW)}
+                                      className="mt-0.5 text-indigo-500 focus:ring-indigo-500"
+                                    />
+                                    <div>
+                                      <span className="block text-slate-100 font-medium">👁 View Only (Default)</span>
+                                      <span className="text-[11px] text-slate-400 font-normal">
+                                        Provider can stream and view document in-browser. File downloading is strictly blocked.
+                                      </span>
+                                    </div>
+                                  </label>
+
+                                  <label
+                                    className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start gap-2.5 ${
+                                      sharePermission === DocumentSharePermission.VIEW_AND_DOWNLOAD
+                                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-300 font-semibold'
+                                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                                    }`}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="share_permission"
+                                      value={DocumentSharePermission.VIEW_AND_DOWNLOAD}
+                                      checked={sharePermission === DocumentSharePermission.VIEW_AND_DOWNLOAD}
+                                      onChange={() => setSharePermission(DocumentSharePermission.VIEW_AND_DOWNLOAD)}
+                                      className="mt-0.5 text-emerald-500 focus:ring-emerald-500"
+                                    />
+                                    <div>
+                                      <span className="block text-slate-100 font-medium">⬇ View + Download Allowed</span>
+                                      <span className="text-[11px] text-slate-400 font-normal">
+                                        Provider can view in-browser AND download original file attachment to disk.
+                                      </span>
+                                    </div>
+                                  </label>
+                                </div>
+                              </div>
+
+                              {uploadError && (
+                                <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs rounded-xl">
+                                  {uploadError}
+                                </div>
+                              )}
+
+                              {uploadSuccess && (
+                                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs rounded-xl">
+                                  {uploadSuccess}
+                                </div>
+                              )}
+
+                              {uploadProgressMessage && (
+                                <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs rounded-xl flex items-center gap-2">
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                  <span>{uploadProgressMessage}</span>
+                                </div>
+                              )}
+
+                              {/* DROPZONE / FILE PICKER */}
+                              <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-xl p-4 text-center transition-colors">
+                                <label className="cursor-pointer block">
+                                  <Plus className="w-6 h-6 text-indigo-400 mx-auto mb-1" />
+                                  <span className="text-xs font-semibold text-slate-200">
+                                    Click to Select Documents
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 block mt-0.5">
+                                    Supports PDF, JPG, PNG (Select multiple files at once)
+                                  </span>
                                   <input
                                     type="file"
                                     multiple
+                                    accept=".pdf,.jpg,.jpeg,.png"
                                     onChange={handleFileSelect}
                                     className="hidden"
                                   />
@@ -546,7 +594,7 @@ export const RequestDetailsPage: React.FC = () => {
 
                                   <div className="flex items-center justify-between pt-3 border-t border-slate-800">
                                     <span className="text-[11px] text-slate-400">
-                                      Files will be stored securely and shared directly with {prov.full_name}.
+                                      Files will be stored securely and shared with permission level: <strong>{sharePermission}</strong>.
                                     </span>
 
                                     <Button
@@ -563,11 +611,11 @@ export const RequestDetailsPage: React.FC = () => {
                               )}
                             </form>
 
-                            {/* CURRENTLY ATTACHED / SHARED DOCUMENTS FEED */}
+                            {/* CURRENTLY ATTACHED / SHARED DOCUMENTS VAULT */}
                             {myDocuments.length > 0 && (
                               <div className="pt-2 space-y-3">
                                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-                                  Your Uploaded Vault Documents ({myDocuments.length})
+                                  Your Vault Documents & Access Security Status ({myDocuments.length})
                                 </span>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -582,21 +630,32 @@ export const RequestDetailsPage: React.FC = () => {
                                           <span className="font-semibold text-slate-200 block truncate">
                                             {doc.title}
                                           </span>
-                                          <span className="text-[10px] text-slate-500 block truncate">
-                                            {doc.filename}
-                                          </span>
+                                          <div className="mt-1">
+                                            {renderSecurityStatusBadge(doc)}
+                                          </div>
                                         </div>
                                       </div>
 
-                                      <a
-                                        href={documentsApi.downloadDocumentUrl(doc.id)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-1.5 bg-slate-900 hover:bg-slate-800 text-indigo-400 rounded-lg border border-slate-800 transition-colors shrink-0"
-                                        title="Download / View File"
-                                      >
-                                        <Download className="w-3.5 h-3.5" />
-                                      </a>
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        <button
+                                          type="button"
+                                          onClick={() => setManagingDoc(doc)}
+                                          className="p-1.5 bg-slate-900 hover:bg-slate-800 text-indigo-300 rounded-lg border border-slate-800 transition-colors"
+                                          title="Manage Access & Permissions"
+                                        >
+                                          <Key className="w-3.5 h-3.5" />
+                                        </button>
+
+                                        <a
+                                          href={documentsApi.getDocumentDownloadUrl(doc.id)}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="p-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 rounded-lg border border-slate-800 transition-colors"
+                                          title="Download File"
+                                        >
+                                          <Download className="w-3.5 h-3.5" />
+                                        </a>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
@@ -650,26 +709,98 @@ export const RequestDetailsPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-4 border-t border-slate-800">
-                <div>
-                  <span className="text-slate-400">Legal Aid Interest: </span>
-                  <span className="font-semibold text-slate-200">
-                    {request.legal_aid_interest ? 'Yes (Flagged for Legal Aid routing)' : 'No'}
-                  </span>
-                </div>
-
-                <div className="sm:text-right">
-                  <span className="text-slate-400">Created At: </span>
-                  <span className="text-slate-300">
-                    {new Date(request.created_at).toLocaleString()}
-                  </span>
-                </div>
-              </div>
             </Card>
           </div>
         )}
       </main>
+
+      {/* MANAGE ACCESS MODAL */}
+      {managingDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <Card className="max-w-lg w-full p-6 border-slate-800 bg-slate-900 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Key className="w-5 h-5 text-indigo-400" />
+                <h3 className="text-base font-bold text-slate-100">
+                  Manage Access — {managingDoc.title}
+                </h3>
+              </div>
+              <button
+                onClick={() => setManagingDoc(null)}
+                className="text-slate-400 hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                <div>
+                  <span className="text-slate-400 font-medium block">Document Title: {managingDoc.title}</span>
+                  <span className="text-slate-500 text-[11px] block">Filename: {managingDoc.filename}</span>
+                </div>
+                <div>{renderSecurityStatusBadge(managingDoc)}</div>
+              </div>
+
+              <h4 className="font-bold text-slate-200 uppercase tracking-wider text-[11px] pt-1">
+                Active & Revoked Share Grants
+              </h4>
+
+              {(!managingDoc.shares || managingDoc.shares.length === 0) ? (
+                <p className="text-slate-400 text-xs italic p-3 bg-slate-950 rounded-xl border border-slate-800">
+                  This document is currently PRIVATE to you. No providers have been granted access.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {managingDoc.shares.map((share) => (
+                    <div
+                      key={share.id}
+                      className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs"
+                    >
+                      <div className="space-y-1">
+                        <span className="font-semibold text-slate-200 block">
+                          Provider ID #{share.shared_with_provider_id}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            share.permission === DocumentSharePermission.VIEW_AND_DOWNLOAD
+                              ? 'bg-emerald-500/10 text-emerald-300'
+                              : 'bg-indigo-500/10 text-indigo-300'
+                          }`}>
+                            {share.permission === DocumentSharePermission.VIEW_AND_DOWNLOAD ? 'View + Download' : 'View Only'}
+                          </span>
+                          <span className="text-slate-500 text-[10px]">
+                            Status: {share.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      {share.status === DocumentShareStatus.ACTIVE ? (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          isLoading={isRevokingProviderId === share.shared_with_provider_id}
+                          onClick={() => handleRevokeShare(managingDoc.id, share.shared_with_provider_id)}
+                        >
+                          Revoke Access
+                        </Button>
+                      ) : (
+                        <span className="text-slate-500 text-[11px] font-medium">Access Revoked</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <Button variant="outline" size="sm" onClick={() => setManagingDoc(null)}>
+                Close
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
