@@ -35,7 +35,7 @@ async def upload_document(
     title: Optional[str] = Form(None),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-) -> DocumentOut:
+) -> Document:
     content = await file.read()
     storage_path, sanitized_filename, file_size, mime_type = validate_and_save_upload_file(file, content)
 
@@ -78,7 +78,7 @@ def get_my_documents(
     limit: int = 50,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-) -> List[DocumentOut]:
+) -> List[Document]:
     owned_docs = db.query(Document).filter(Document.owner_id == current_user.id).all()
 
     shared_docs = []
@@ -196,7 +196,7 @@ def share_document(
     share_in: DocumentShareCreate,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-) -> DocumentShareOut:
+) -> DocumentShare:
     doc = db.query(Document).filter(Document.id == document_id).first()
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
@@ -256,7 +256,7 @@ def revoke_document(
     revoke_in: DocumentShareRevoke,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
-) -> DocumentShareOut:
+) -> DocumentShare:
     doc = db.query(Document).filter(Document.id == document_id).first()
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
@@ -302,3 +302,4 @@ def revoke_document(
     )
 
     return share
+
