@@ -7,11 +7,12 @@ export const documentsApi = {
     formData.append('title', title);
     formData.append('file', file);
 
-    const response = await apiClient.post<DocumentItem>('/api/documents/upload', formData, {
+    const response = await apiClient.post<DocumentItem>('/api/documents', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
+
     return response.data;
   },
 

@@ -16,12 +16,20 @@ router = APIRouter(prefix="/documents", tags=["Secure Private Documents"])
 
 
 @router.post(
+    "/upload",
+    response_model=DocumentOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload secure private document (alias)",
+    description="Uploads PDF, JPG, or PNG document. owner_id is bound strictly to the authenticated user. File is stored in private disk storage."
+)
+@router.post(
     "",
     response_model=DocumentOut,
     status_code=status.HTTP_201_CREATED,
     summary="Upload secure private document",
     description="Uploads PDF, JPG, or PNG document. owner_id is bound strictly to the authenticated user. File is stored in private disk storage."
 )
+
 async def upload_document(
     file: UploadFile = File(...),
     title: Optional[str] = Form(None),
