@@ -7,13 +7,13 @@ interface LoadingStateProps {
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({
-  message = 'Loading data...',
+  message = 'Loading details...',
   className = '',
 }) => {
   return (
-    <div className={`flex flex-col items-center justify-center p-12 text-slate-400 ${className}`}>
-      <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-3" />
-      <p className="text-xs font-medium tracking-wide text-slate-400">{message}</p>
+    <div className={`flex flex-col items-center justify-center p-8 text-center ${className}`}>
+      <Loader2 className="w-7 h-7 text-[#7C9A82] animate-spin mb-3" />
+      <span className="text-xs font-semibold text-[#617066] tracking-wide">{message}</span>
     </div>
   );
 };

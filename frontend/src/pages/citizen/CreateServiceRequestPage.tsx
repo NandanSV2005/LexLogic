@@ -37,49 +37,49 @@ const SERVICE_CATEGORIES: ServiceCategoryOption[] = [
     id: 'Property Dispute',
     label: 'Property Dispute',
     description: 'Title deeds, land ownership, tenant issues & real estate conflicts',
-    icon: <Building2 className="w-5 h-5 text-indigo-400" />,
+    icon: <Building2 className="w-5 h-5 text-[#7C9A82]" />,
     defaultProviderType: ProviderType.ADVOCATE,
   },
   {
     id: 'Commercial Dispute',
     label: 'Commercial Dispute',
     description: 'Business contracts, vendor agreements & corporate litigation',
-    icon: <Briefcase className="w-5 h-5 text-sky-400" />,
+    icon: <Briefcase className="w-5 h-5 text-[#9A8FB5]" />,
     defaultProviderType: ProviderType.ADVOCATE,
   },
   {
     id: 'Document Preparation',
     label: 'Document Preparation',
     description: 'Drafting agreements, affidavits, wills, deeds & formal legal notices',
-    icon: <FileCheck className="w-5 h-5 text-emerald-400" />,
+    icon: <FileCheck className="w-5 h-5 text-[#7C9A82]" />,
     defaultProviderType: ProviderType.DOCUMENT_WRITER,
   },
   {
     id: 'Mediation',
     label: 'Mediation',
     description: 'Out-of-court amicable settlement for family, civil or business issues',
-    icon: <Users className="w-5 h-5 text-purple-400" />,
+    icon: <Users className="w-5 h-5 text-[#9A8FB5]" />,
     defaultProviderType: ProviderType.MEDIATOR,
   },
   {
     id: 'Arbitration',
     label: 'Arbitration',
     description: 'Formal binding dispute resolution for commercial contracts',
-    icon: <Award className="w-5 h-5 text-amber-400" />,
+    icon: <Award className="w-5 h-5 text-[#D6A89A]" />,
     defaultProviderType: ProviderType.ARBITRATOR,
   },
   {
     id: 'Notary Service',
     label: 'Notary Service',
     description: 'Official document attestation, swearing affidavits & verification',
-    icon: <Stamp className="w-5 h-5 text-teal-400" />,
+    icon: <Stamp className="w-5 h-5 text-[#7C9A82]" />,
     defaultProviderType: ProviderType.NOTARY,
   },
   {
     id: 'Other Legal Issue',
     label: 'Other',
     description: 'General legal advice or unlisted legal assistance requirements',
-    icon: <HelpCircle className="w-5 h-5 text-slate-400" />,
+    icon: <HelpCircle className="w-5 h-5 text-[#617066]" />,
     defaultProviderType: ProviderType.ADVOCATE,
   },
 ];
@@ -142,20 +142,20 @@ export const CreateServiceRequestPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-[#E8F0E6] text-[#29352D] flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#7C9A82] uppercase tracking-wider mb-1">
             <Sparkles className="w-4 h-4" />
             <span>Service-First Matching Flow</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#29352D] tracking-tight">
             Describe Your Legal Need
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-[#617066] mt-1">
             Tell us what issue you are facing. LexLogic will analyze your requirement and match you with verified, available providers without promotional ranking bias.
           </p>
         </div>
@@ -170,16 +170,16 @@ export const CreateServiceRequestPage: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* SECTION 1: What do you need help with? */}
-          <Card className="p-6 border-slate-800 bg-slate-900/90 shadow-xl">
-            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-800">
-              <div className="p-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg">
+          <Card className="p-6">
+            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#C8D7C7]">
+              <div className="p-2 bg-[#DDE8DC] text-[#7C9A82] border border-[#C8D7C7] rounded-lg">
                 <Scale className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-slate-100">
+                <h2 className="text-base font-bold text-[#29352D]">
                   Section 1 — What do you need help with?
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#617066]">
                   Select the category that best matches your situation or type in your own words.
                 </p>
               </div>
@@ -196,20 +196,20 @@ export const CreateServiceRequestPage: React.FC = () => {
                     onClick={() => handleCategorySelect(cat)}
                     className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
                       isSelected
-                        ? 'bg-indigo-600/15 border-indigo-500 text-slate-100 shadow-md shadow-indigo-950/50 ring-1 ring-indigo-500/50'
-                        : 'bg-slate-950 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-900/50'
+                        ? 'bg-[#DDE8DC] border-[#7C9A82] text-[#29352D] shadow-sm font-semibold'
+                        : 'bg-[#FAFCF9] border-[#C8D7C7] text-[#617066] hover:border-[#7C9A82]'
                     }`}
                   >
                     <div className="flex items-center justify-between w-full mb-2">
-                      <div className="p-1.5 bg-slate-900 border border-slate-800 rounded-lg">
+                      <div className="p-1.5 bg-[#F0F4EC] border border-[#C8D7C7] rounded-lg">
                         {cat.icon}
                       </div>
                       {isSelected && (
-                        <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-[#7C9A82]" />
                       )}
                     </div>
-                    <span className="text-xs font-semibold text-slate-100">{cat.label}</span>
-                    <span className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                    <span className="text-xs font-bold text-[#29352D]">{cat.label}</span>
+                    <span className="text-[11px] text-[#617066] mt-1 line-clamp-2 leading-relaxed">
                       {cat.description}
                     </span>
                   </button>
@@ -219,8 +219,8 @@ export const CreateServiceRequestPage: React.FC = () => {
 
             {/* Free-text Description Field */}
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-indigo-400" />
+              <label className="text-xs font-semibold text-[#29352D] uppercase tracking-wide flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-[#7C9A82]" />
                 <span>Describe your legal issue in detail</span>
               </label>
               <textarea
@@ -228,26 +228,26 @@ export const CreateServiceRequestPage: React.FC = () => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe your legal issue in your own words..."
-                className="w-full px-3.5 py-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 text-xs sm:text-sm leading-relaxed"
+                className="w-full px-3.5 py-3 bg-[#FAFCF9] border border-[#C8D7C7] rounded-xl text-[#29352D] placeholder-[#8C9B90] focus:outline-none focus:ring-2 focus:ring-[#7C9A82]/30 focus:border-[#7C9A82] text-xs sm:text-sm leading-relaxed"
                 required
               />
-              <span className="text-[11px] text-slate-400">
+              <span className="text-[11px] text-[#617066]">
                 You do not need to identify legal terminology or exact lawyer types. Just describe the problem you need solved.
               </span>
             </div>
           </Card>
 
           {/* SECTION 2: Location */}
-          <Card className="p-6 border-slate-800 bg-slate-900/90 shadow-xl">
-            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-800">
-              <div className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg">
+          <Card className="p-6">
+            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#C8D7C7]">
+              <div className="p-2 bg-[#DDE8DC] text-[#7C9A82] border border-[#C8D7C7] rounded-lg">
                 <MapPin className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-slate-100">
+                <h2 className="text-base font-bold text-[#29352D]">
                   Section 2 — Location
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#617066]">
                   Location helps the matching engine prioritize providers near your court jurisdiction or city.
                 </p>
               </div>
@@ -260,22 +260,22 @@ export const CreateServiceRequestPage: React.FC = () => {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               required
-              leftIcon={<MapPin className="w-4 h-4 text-emerald-400" />}
+              leftIcon={<MapPin className="w-4 h-4 text-[#7C9A82]" />}
               helperText="Enter your city or district name for localized matching."
             />
           </Card>
 
           {/* SECTION 3: Optional Preferences */}
-          <Card className="p-6 border-slate-800 bg-slate-900/90 shadow-xl">
-            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-800">
-              <div className="p-2 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-lg">
+          <Card className="p-6">
+            <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#C8D7C7]">
+              <div className="p-2 bg-[#DDE8DC] text-[#9A8FB5] border border-[#C8D7C7] rounded-lg">
                 <Clock className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-base font-semibold text-slate-100">
+                <h2 className="text-base font-bold text-[#29352D]">
                   Section 3 — Optional Preferences
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#617066]">
                   Specify optional constraints such as provider category or request urgency.
                 </p>
               </div>
@@ -284,7 +284,7 @@ export const CreateServiceRequestPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {/* Preferred Provider Type */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                <label className="text-xs font-semibold text-[#29352D] uppercase tracking-wide">
                   Preferred Provider Type (Optional)
                 </label>
                 <select
@@ -293,7 +293,7 @@ export const CreateServiceRequestPage: React.FC = () => {
                     setPreferredProviderType(e.target.value as ProviderType);
                     setIsCustomProviderType(true);
                   }}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full px-3.5 py-2.5 bg-[#FAFCF9] border border-[#C8D7C7] rounded-xl text-[#29352D] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#7C9A82]/30"
                 >
                   <option value={ProviderType.ADVOCATE}>Advocate (High Court / District Court)</option>
                   <option value={ProviderType.MEDIATOR}>Mediator (Out-of-Court Settlement)</option>
@@ -301,20 +301,20 @@ export const CreateServiceRequestPage: React.FC = () => {
                   <option value={ProviderType.NOTARY}>Notary (Attestation & Sworn Oath)</option>
                   <option value={ProviderType.DOCUMENT_WRITER}>Document Writer (Deed Drafting)</option>
                 </select>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-[#617066]">
                   System auto-recommends provider type based on your category choice.
                 </span>
               </div>
 
               {/* Urgency */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
+                <label className="text-xs font-semibold text-[#29352D] uppercase tracking-wide">
                   Urgency Level
                 </label>
                 <select
                   value={urgency}
                   onChange={(e) => setUrgency(e.target.value as RequestUrgency)}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  className="w-full px-3.5 py-2.5 bg-[#FAFCF9] border border-[#C8D7C7] rounded-xl text-[#29352D] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#7C9A82]/30"
                 >
                   <option value={RequestUrgency.NORMAL}>Normal (Standard Response)</option>
                   <option value={RequestUrgency.HIGH}>High (Require attention within 24 hours)</option>
@@ -324,19 +324,19 @@ export const CreateServiceRequestPage: React.FC = () => {
             </div>
 
             {/* Legal Aid Interest Flag */}
-            <div className="mt-6 pt-4 border-t border-slate-800 flex items-start gap-3">
+            <div className="mt-6 pt-4 border-t border-[#C8D7C7] flex items-start gap-3">
               <input
                 type="checkbox"
                 id="legalAidCheck"
                 checked={legalAidInterest}
                 onChange={(e) => setLegalAidInterest(e.target.checked)}
-                className="mt-0.5 w-4 h-4 text-indigo-600 bg-slate-950 border-slate-800 rounded focus:ring-indigo-500 focus:ring-offset-slate-900"
+                className="mt-0.5 w-4 h-4 text-[#7C9A82] bg-[#FAFCF9] border-[#C8D7C7] rounded focus:ring-[#7C9A82]"
               />
-              <label htmlFor="legalAidCheck" className="text-xs text-slate-300 cursor-pointer">
-                <span className="font-semibold text-slate-100">
+              <label htmlFor="legalAidCheck" className="text-xs text-[#29352D] cursor-pointer">
+                <span className="font-bold text-[#29352D]">
                   I am interested in Legal Aid / Pro Bono support options
                 </span>
-                <p className="text-slate-400 mt-0.5 text-[11px]">
+                <p className="text-[#617066] mt-0.5 text-[11px]">
                   Check this box if you may qualify for free or subsidized legal services under legal aid guidelines.
                 </p>
               </label>
@@ -347,7 +347,7 @@ export const CreateServiceRequestPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
             <Link
               to="/citizen/dashboard"
-              className="text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
+              className="text-xs font-semibold text-[#617066] hover:text-[#29352D] transition-colors"
             >
               Cancel & Return to Dashboard
             </Link>
@@ -364,8 +364,8 @@ export const CreateServiceRequestPage: React.FC = () => {
             </Button>
           </div>
 
-          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 text-center">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="flex items-center justify-center gap-2 text-[11px] text-[#617066] text-center">
+            <ShieldCheck className="w-4 h-4 text-[#7C9A82] shrink-0" />
             <span>
               All Advocate matching adheres strictly to Bar Council anti-promotional rules. Results display factual parameters only.
             </span>

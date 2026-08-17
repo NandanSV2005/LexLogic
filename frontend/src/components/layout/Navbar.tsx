@@ -21,29 +21,29 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <header className="sticky top-0 z-40 bg-[#DDE8DC]/90 backdrop-blur-md border-b border-[#C8D7C7]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <Link to={getDashboardPath()} className="flex items-center gap-3 group">
-          <div className="p-2 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
+          <div className="p-2 bg-[#7C9A82]/15 border border-[#7C9A82]/30 rounded-xl text-[#7C9A82] group-hover:bg-[#7C9A82]/25 transition-colors">
             <Scale className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-lg font-bold text-slate-100 tracking-tight block">
-              Lex<span className="text-indigo-400">Logic</span>
+            <span className="text-lg font-bold text-[#29352D] tracking-tight block">
+              Lex<span className="text-[#7C9A82]">Logic</span>
             </span>
-            <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-400 -mt-1 block">
-              Legal Services Network
+            <span className="text-[10px] font-semibold tracking-wider uppercase text-[#617066] -mt-1 block">
+              Legal Access Network
             </span>
           </div>
         </Link>
 
         {/* Right User Actions */}
         {isAuthenticated && user ? (
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-950/60 border border-slate-800 rounded-xl">
-              <UserIcon className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-xs font-medium text-slate-200">{user.email}</span>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[#F0F4EC] border border-[#C8D7C7] rounded-xl">
+              <UserIcon className="w-3.5 h-3.5 text-[#617066]" />
+              <span className="text-xs font-semibold text-[#29352D]">{user.email}</span>
               <Badge
                 variant={
                   isAdmin ? 'purple' : isProvider ? 'indigo' : 'success'
@@ -56,7 +56,7 @@ export const Navbar: React.FC = () => {
 
             <button
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl border border-transparent hover:border-rose-500/20 transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[#617066] hover:text-[#5C1D1D] hover:bg-[#F4D6D6]/50 rounded-xl border border-transparent hover:border-[#E8B4B4] transition-all"
               title="Sign Out"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -64,16 +64,16 @@ export const Navbar: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <Link
               to="/login"
-              className="text-xs font-semibold text-slate-300 hover:text-white px-3.5 py-2 rounded-xl hover:bg-slate-800 transition-colors"
+              className="text-xs font-semibold text-[#29352D] hover:text-[#7C9A82] px-3.5 py-2 rounded-xl hover:bg-[#F0F4EC] transition-colors"
             >
               Sign In
             </Link>
             <Link
               to="/register"
-              className="text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl transition-all shadow-md shadow-indigo-600/20"
+              className="text-xs font-semibold bg-[#7C9A82] hover:bg-[#6B8870] text-white px-4 py-2 rounded-xl transition-all shadow-sm"
             >
               Register
             </Link>

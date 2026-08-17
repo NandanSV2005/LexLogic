@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
   UserCheck,
   ShieldCheck,
-  Award,
   Save,
   ArrowLeft,
   Briefcase,
@@ -13,17 +12,15 @@ import {
   FileText,
   Sparkles,
   CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
 import { Navbar } from '../../components/layout/Navbar';
 import { Card } from '../../components/common/Card';
-import { Badge } from '../../components/common/Badge';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { LoadingState } from '../../components/common/LoadingState';
 import { ErrorState } from '../../components/common/ErrorState';
 import { providersApi } from '../../api';
-import { Provider, ProviderType, VerificationStatus } from '../../types';
+import { Provider } from '../../types';
 
 export const ProviderProfilePage: React.FC = () => {
   const navigate = useNavigate();
@@ -115,31 +112,31 @@ export const ProviderProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-[#E8F0E6] text-[#29352D] flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Link
           to="/provider/dashboard"
-          className="inline-flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-medium mb-6 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-[#7C9A82] hover:text-[#6B8870] font-semibold mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Provider Dashboard
         </Link>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#29352D] tracking-tight">
               Edit Provider Profile
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            <p className="text-xs sm:text-sm text-[#617066] mt-1">
               Maintain accurate practice details and earn points upon complete profile setup.
             </p>
           </div>
 
           {profile && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Profile Completion:</span>
-              <span className="text-sm font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-xl">
+              <span className="text-xs text-[#617066]">Profile Completion:</span>
+              <span className="text-sm font-bold text-[#7C9A82] bg-[#DDE8DC] border border-[#C8D7C7] px-3 py-1 rounded-xl">
                 {profile.profile_completion_percentage}%
               </span>
             </div>
@@ -147,21 +144,21 @@ export const ProviderProfilePage: React.FC = () => {
         </div>
 
         {/* INCENTIVE CALLOUT BANNER */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-indigo-950/80 to-slate-900 border border-indigo-500/30 rounded-2xl flex items-center justify-between gap-4 shadow-lg">
+        <div className="mb-6 p-4 bg-[#DDE8DC] border border-[#C8D7C7] rounded-2xl flex items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/20 text-indigo-300 rounded-xl">
+            <div className="p-2 bg-[#F0F4EC] text-[#7C9A82] rounded-xl">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-xs font-bold text-slate-100">Complete profile → earn points</span>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <span className="text-xs font-bold text-[#29352D]">Complete profile → earn points</span>
+              <p className="text-xs text-[#617066] mt-0.5">
                 Complete all profile attributes to reach 100% completion and earn +50 incentive points.
               </p>
             </div>
           </div>
 
           {profile?.is_profile_complete && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-xl shrink-0">
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#1F4724] bg-[#D4E5D4] border border-[#B2D4B2] px-3 py-1 rounded-xl shrink-0">
               <CheckCircle2 className="w-4 h-4" /> Profile 100% Complete
             </span>
           )}
@@ -183,7 +180,7 @@ export const ProviderProfilePage: React.FC = () => {
         )}
 
         {successMessage && (
-          <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs rounded-xl flex items-center gap-2">
+          <div className="mb-6 p-4 bg-[#D4E5D4] border border-[#B2D4B2] text-[#1F4724] text-xs rounded-xl flex items-center gap-2 font-semibold">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
             <span>{successMessage}</span>
           </div>
@@ -192,14 +189,14 @@ export const ProviderProfilePage: React.FC = () => {
         {!isLoading && profile && (
           <form onSubmit={handleSaveProfile} className="space-y-8">
             {/* BASE PROFILE FIELDS */}
-            <Card className="p-6 border-slate-800 bg-slate-900/90 shadow-xl space-y-5">
-              <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
-                <div className="p-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg">
+            <Card className="p-6 space-y-5">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#C8D7C7]">
+                <div className="p-2 bg-[#DDE8DC] text-[#7C9A82] border border-[#C8D7C7] rounded-lg">
                   <UserCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-slate-100">Base Profile Details</h2>
-                  <p className="text-xs text-slate-400">Core personal and professional practice details.</p>
+                  <h2 className="text-base font-bold text-[#29352D]">Base Profile Details</h2>
+                  <p className="text-xs text-[#617066]">Core personal and professional practice details.</p>
                 </div>
               </div>
 
@@ -210,7 +207,7 @@ export const ProviderProfilePage: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
-                  leftIcon={<UserCheck className="w-4 h-4 text-indigo-400" />}
+                  leftIcon={<UserCheck className="w-4 h-4 text-[#7C9A82]" />}
                 />
 
                 <Input
@@ -219,7 +216,7 @@ export const ProviderProfilePage: React.FC = () => {
                   placeholder="+91-9876543210"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  leftIcon={<Phone className="w-4 h-4 text-sky-400" />}
+                  leftIcon={<Phone className="w-4 h-4 text-[#9A8FB5]" />}
                 />
 
                 <Input
@@ -229,7 +226,7 @@ export const ProviderProfilePage: React.FC = () => {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   required
-                  leftIcon={<MapPin className="w-4 h-4 text-emerald-400" />}
+                  leftIcon={<MapPin className="w-4 h-4 text-[#7C9A82]" />}
                 />
 
                 <Input
@@ -239,35 +236,35 @@ export const ProviderProfilePage: React.FC = () => {
                   value={experienceYears}
                   onChange={(e) => setExperienceYears(Number(e.target.value))}
                   required
-                  leftIcon={<Clock className="w-4 h-4 text-amber-400" />}
+                  leftIcon={<Clock className="w-4 h-4 text-[#D6A89A]" />}
                 />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-indigo-400" /> Professional Biography / Summary
+                <label className="text-xs font-semibold text-[#29352D] uppercase tracking-wide flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-[#7C9A82]" /> Professional Biography / Summary
                 </label>
                 <textarea
                   rows={4}
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   placeholder="Summarize your legal qualifications, court experience, or document drafting expertise..."
-                  className="w-full px-3.5 py-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 leading-relaxed"
+                  className="w-full px-3.5 py-3 bg-[#FAFCF9] border border-[#C8D7C7] rounded-xl text-[#29352D] placeholder-[#8C9B90] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#7C9A82]/30 leading-relaxed"
                 />
               </div>
             </Card>
 
             {/* DYNAMIC GENERIC FIELDS (BAR REGISTRATION / PRACTICE AREAS) */}
-            <Card className="p-6 border-slate-800 bg-slate-900/90 shadow-xl space-y-5">
-              <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
-                <div className="p-2 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg">
+            <Card className="p-6 space-y-5">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#C8D7C7]">
+                <div className="p-2 bg-[#DDE8DC] text-[#9A8FB5] border border-[#C8D7C7] rounded-lg">
                   <Briefcase className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-slate-100">
+                  <h2 className="text-base font-bold text-[#29352D]">
                     Registration & Practice Area Specifications
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-[#617066]">
                     Provider-type specific attributes evaluated by LexLogic matching engine.
                   </p>
                 </div>
@@ -280,7 +277,7 @@ export const ProviderProfilePage: React.FC = () => {
                   placeholder="e.g. Constitutional & Commercial Property Litigation, Real Estate"
                   value={practiceArea}
                   onChange={(e) => setPracticeArea(e.target.value)}
-                  leftIcon={<Briefcase className="w-4 h-4 text-purple-400" />}
+                  leftIcon={<Briefcase className="w-4 h-4 text-[#9A8FB5]" />}
                   helperText="List your primary areas of practice separated by commas."
                 />
 
@@ -290,7 +287,7 @@ export const ProviderProfilePage: React.FC = () => {
                   placeholder="e.g. Bar Council Reg No. D/9876/2009 or License ID"
                   value={registrationDetails}
                   onChange={(e) => setRegistrationDetails(e.target.value)}
-                  leftIcon={<ShieldCheck className="w-4 h-4 text-indigo-400" />}
+                  leftIcon={<ShieldCheck className="w-4 h-4 text-[#7C9A82]" />}
                   helperText="Official license or bar council registration number used for admin verification."
                 />
               </div>

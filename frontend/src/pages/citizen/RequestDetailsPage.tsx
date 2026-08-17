@@ -1,22 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
-  Scale,
   MapPin,
   Clock,
   CheckCircle2,
-  AlertCircle,
   ArrowLeft,
-  Sparkles,
   FileText,
-  ShieldCheck,
-  UserCheck,
-  Phone,
   Upload,
-  Share2,
   FolderLock,
   Lock,
-  ExternalLink,
   Trash2,
   Download,
   Plus,
@@ -25,12 +17,12 @@ import {
   Key,
   X,
   RefreshCw,
+  UserCheck,
 } from 'lucide-react';
 import { Navbar } from '../../components/layout/Navbar';
 import { Card } from '../../components/common/Card';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
-import { Input } from '../../components/common/Input';
 import { LoadingState } from '../../components/common/LoadingState';
 import { ErrorState } from '../../components/common/ErrorState';
 import { requestsApi, documentsApi } from '../../api';
@@ -235,16 +227,16 @@ export const RequestDetailsPage: React.FC = () => {
   const renderSecurityStatusBadge = (doc: DocumentItem) => {
     if (doc.visibility === DocumentVisibility.PRIVATE) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
-          <Lock className="w-3 h-3 text-slate-400" /> Private
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#E2E8E2] text-[#3A473E] border border-[#C4D0C4]">
+          <Lock className="w-3 h-3 text-[#617066]" /> Private
         </span>
       );
     }
 
     if (doc.visibility === DocumentVisibility.REVOKED) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20">
-          <ShieldAlert className="w-3 h-3 text-rose-400" /> Access Revoked
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#F4D6D6] text-[#5C1D1D] border border-[#E8B4B4]">
+          <ShieldAlert className="w-3 h-3 text-[#5C1D1D]" /> Access Revoked
         </span>
       );
     }
@@ -255,21 +247,21 @@ export const RequestDetailsPage: React.FC = () => {
 
     if (hasDownloadShare) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-          <Download className="w-3 h-3 text-emerald-400" /> Shared — View + Download
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#D4E5D4] text-[#1F4724] border border-[#B2D4B2]">
+          <Download className="w-3 h-3 text-[#1F4724]" /> Shared — View + Download
         </span>
       );
     }
 
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-        <Eye className="w-3 h-3 text-indigo-400" /> Shared — View Only
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#E6E2F0] text-[#3D3352] border border-[#CBBFE0]">
+        <Eye className="w-3 h-3 text-[#3D3352]" /> Shared — View Only
       </span>
     );
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-[#E8F0E6] text-[#29352D] flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -278,12 +270,12 @@ export const RequestDetailsPage: React.FC = () => {
           <div>
             <Link
               to="/citizen/dashboard"
-              className="inline-flex items-center text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors mb-2 gap-1"
+              className="inline-flex items-center text-xs font-semibold text-[#7C9A82] hover:text-[#6B8870] transition-colors mb-2 gap-1"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Dashboard
             </Link>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#29352D] tracking-tight">
                 Request Details #{requestId}
               </h1>
               {request && (
@@ -313,12 +305,12 @@ export const RequestDetailsPage: React.FC = () => {
         )}
 
         {successMessage && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs rounded-xl flex items-center justify-between">
+          <div className="p-4 bg-[#D4E5D4] border border-[#B2D4B2] text-[#1F4724] text-xs rounded-xl flex items-center justify-between font-semibold">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#1F4724]" />
               <span>{successMessage}</span>
             </div>
-            <button onClick={() => setSuccessMessage(null)} className="text-slate-400 hover:text-slate-200">
+            <button onClick={() => setSuccessMessage(null)} className="text-[#1F4724] hover:opacity-75">
               ✕
             </button>
           </div>
@@ -336,20 +328,20 @@ export const RequestDetailsPage: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-100 tracking-tight flex items-center gap-2">
-                    <UserCheck className="w-5 h-5 text-indigo-400" /> Interested Legal Providers ({interestedProviders.length})
+                  <h2 className="text-lg font-extrabold text-[#29352D] tracking-tight flex items-center gap-2">
+                    <UserCheck className="w-5 h-5 text-[#7C9A82]" /> Interested Legal Providers ({interestedProviders.length})
                   </h2>
-                  <p className="text-xs text-slate-400">
-                    Providers who have expressed interest in fighting your case or assisting your legal need.
+                  <p className="text-xs text-[#617066]">
+                    Providers who have expressed interest in assisting your legal need.
                   </p>
                 </div>
               </div>
 
               {interestedProviders.length === 0 ? (
-                <Card className="p-8 text-center border-slate-800 bg-slate-900/50">
-                  <Clock className="w-8 h-8 text-slate-600 mx-auto mb-3" />
-                  <h3 className="text-sm font-bold text-slate-300">No Providers Have Expressed Interest Yet</h3>
-                  <p className="text-xs text-slate-500 mt-1">
+                <Card className="p-8 text-center bg-[#F0F4EC]">
+                  <Clock className="w-8 h-8 text-[#617066] mx-auto mb-3" />
+                  <h3 className="text-sm font-bold text-[#29352D]">No Providers Have Expressed Interest Yet</h3>
+                  <p className="text-xs text-[#617066] mt-1">
                     Verified providers in your category are reviewing open requests. Check back soon.
                   </p>
                 </Card>
@@ -360,35 +352,35 @@ export const RequestDetailsPage: React.FC = () => {
                     return (
                       <Card
                         key={prov.provider_id}
-                        className={`p-6 border-slate-800 bg-slate-900/90 shadow-xl space-y-4 transition-all ${
-                          isAccepted ? 'ring-2 ring-emerald-500/50 bg-slate-900' : ''
+                        className={`p-6 transition-all ${
+                          isAccepted ? 'ring-2 ring-[#7C9A82]' : ''
                         }`}
                       >
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           <div className="space-y-1.5">
                             <div className="flex flex-wrap items-center gap-2.5">
-                              <h3 className="text-base font-bold text-slate-100">{prov.full_name}</h3>
+                              <h3 className="text-base font-extrabold text-[#29352D]">{prov.full_name}</h3>
                               <Badge variant="purple">{prov.provider_type}</Badge>
                               {prov.verification_status === 'VERIFIED' && (
                                 <Badge variant="success">Verified Provider</Badge>
                               )}
                               {isAccepted && (
-                                <Badge variant="info" className="animate-pulse">
-                                  ✓ Agreed to Fight For You
+                                <Badge variant="info">
+                                  ✓ Representation Active
                                 </Badge>
                               )}
                             </div>
 
-                            <p className="text-xs text-slate-300 max-w-2xl line-clamp-2">
+                            <p className="text-xs text-[#617066] max-w-2xl line-clamp-2 leading-relaxed">
                               {prov.bio || 'Experienced legal provider dedicated to achieving optimal outcomes.'}
                             </p>
 
-                            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 pt-1">
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-[#617066] pt-1">
                               <span className="flex items-center gap-1">
-                                <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> {prov.location || 'Location upon request'}
+                                <MapPin className="w-3.5 h-3.5 text-[#7C9A82] shrink-0" /> {prov.location || 'Location upon request'}
                               </span>
                               <span>Experience: {prov.experience_years} years</span>
-                              <span>Reliability Score: <strong className="text-purple-300">{prov.reliability_score.toFixed(1)}/100</strong></span>
+                              <span>Reliability Score: <strong className="text-[#29352D]">{prov.reliability_score.toFixed(1)}/100</strong></span>
                             </div>
                           </div>
 
@@ -415,8 +407,8 @@ export const RequestDetailsPage: React.FC = () => {
                                 </Button>
                               </>
                             ) : prov.interaction_status === InteractionStatus.ACCEPTED ? (
-                              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-300 text-xs font-semibold flex items-center gap-2">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Active Service Representation
+                              <div className="p-3 bg-[#D4E5D4] border border-[#B2D4B2] rounded-xl text-[#1F4724] text-xs font-semibold flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-[#1F4724]" /> Active Representation
                               </div>
                             ) : (
                               <Badge variant="neutral">Declined</Badge>
@@ -426,21 +418,21 @@ export const RequestDetailsPage: React.FC = () => {
 
                         {/* REQUESTED DOCUMENTS & DOCUMENT ATTACHMENT TAB */}
                         {isAccepted && (
-                          <div className="pt-4 border-t border-slate-800 space-y-4">
-                            <div className="p-4 bg-slate-950 border border-indigo-500/30 rounded-xl space-y-3">
+                          <div className="pt-4 border-t border-[#C8D7C7] space-y-4">
+                            <div className="p-4 bg-[#DDE8DC] border border-[#C8D7C7] rounded-xl space-y-3">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <FolderLock className="w-4 h-4 text-indigo-400" />
-                                  <span className="text-xs font-bold text-slate-100 uppercase tracking-wider">
+                                  <FolderLock className="w-4 h-4 text-[#7C9A82]" />
+                                  <span className="text-xs font-bold text-[#29352D] uppercase tracking-wider">
                                     Provider Requested Documents
                                   </span>
                                 </div>
-                                <span className="text-[11px] text-indigo-300 font-medium">
+                                <span className="text-[11px] text-[#7C9A82] font-semibold">
                                   Explicit Authorization Required
                                 </span>
                               </div>
 
-                              <p className="text-xs text-slate-300 leading-relaxed">
+                              <p className="text-xs text-[#29352D] leading-relaxed">
                                 {prov.requested_documents
                                   ? `Requested documents: "${prov.requested_documents}"`
                                   : 'Provider has not specified custom documents yet. Upload and share your case documents below.'}
@@ -450,25 +442,25 @@ export const RequestDetailsPage: React.FC = () => {
                             {/* UPLOAD & SHARE FORM WITH PERMISSION CONTROL */}
                             <form
                               onSubmit={(e) => handleBatchUploadAndShare(e, prov.provider_id)}
-                              className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl space-y-4"
+                              className="p-4 bg-[#FAFCF9] border border-[#C8D7C7] rounded-xl space-y-4"
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                                  <Upload className="w-4 h-4 text-indigo-400" /> Attach Case Documents for {prov.full_name}
+                                <span className="text-xs font-bold text-[#29352D] uppercase tracking-wider flex items-center gap-1.5">
+                                  <Upload className="w-4 h-4 text-[#7C9A82]" /> Attach Case Documents for {prov.full_name}
                                 </span>
                               </div>
 
                               {/* PERMISSION SELECTOR: VIEW ONLY vs VIEW + DOWNLOAD */}
-                              <div className="p-3.5 bg-slate-900 border border-slate-800 rounded-xl space-y-2">
-                                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wide block">
+                              <div className="p-3.5 bg-[#F0F4EC] border border-[#C8D7C7] rounded-xl space-y-2">
+                                <label className="text-xs font-bold text-[#29352D] uppercase tracking-wide block">
                                   Select Explicit Permission Level:
                                 </label>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                                   <label
                                     className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start gap-2.5 ${
                                       sharePermission === DocumentSharePermission.VIEW
-                                        ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300 font-semibold'
-                                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                                        ? 'bg-[#DDE8DC] border-[#7C9A82] text-[#29352D] font-bold'
+                                        : 'bg-[#FAFCF9] border-[#C8D7C7] text-[#617066] hover:border-[#7C9A82]'
                                     }`}
                                   >
                                     <input
@@ -477,11 +469,11 @@ export const RequestDetailsPage: React.FC = () => {
                                       value={DocumentSharePermission.VIEW}
                                       checked={sharePermission === DocumentSharePermission.VIEW}
                                       onChange={() => setSharePermission(DocumentSharePermission.VIEW)}
-                                      className="mt-0.5 text-indigo-500 focus:ring-indigo-500"
+                                      className="mt-0.5 text-[#7C9A82] focus:ring-[#7C9A82]"
                                     />
                                     <div>
-                                      <span className="block text-slate-100 font-medium">👁 View Only (Default)</span>
-                                      <span className="text-[11px] text-slate-400 font-normal">
+                                      <span className="block text-[#29352D] font-bold">👁 View Only (Default)</span>
+                                      <span className="text-[11px] text-[#617066] font-normal">
                                         Provider can stream and view document in-browser. File downloading is strictly blocked.
                                       </span>
                                     </div>
@@ -490,8 +482,8 @@ export const RequestDetailsPage: React.FC = () => {
                                   <label
                                     className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start gap-2.5 ${
                                       sharePermission === DocumentSharePermission.VIEW_AND_DOWNLOAD
-                                        ? 'bg-emerald-500/10 border-emerald-500 text-emerald-300 font-semibold'
-                                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                                        ? 'bg-[#D4E5D4] border-[#B2D4B2] text-[#1F4724] font-bold'
+                                        : 'bg-[#FAFCF9] border-[#C8D7C7] text-[#617066] hover:border-[#B2D4B2]'
                                     }`}
                                   >
                                     <input
@@ -500,11 +492,11 @@ export const RequestDetailsPage: React.FC = () => {
                                       value={DocumentSharePermission.VIEW_AND_DOWNLOAD}
                                       checked={sharePermission === DocumentSharePermission.VIEW_AND_DOWNLOAD}
                                       onChange={() => setSharePermission(DocumentSharePermission.VIEW_AND_DOWNLOAD)}
-                                      className="mt-0.5 text-emerald-500 focus:ring-emerald-500"
+                                      className="mt-0.5 text-[#1F4724] focus:ring-[#1F4724]"
                                     />
                                     <div>
-                                      <span className="block text-slate-100 font-medium">⬇ View + Download Allowed</span>
-                                      <span className="text-[11px] text-slate-400 font-normal">
+                                      <span className="block text-[#29352D] font-bold">⬇ View + Download Allowed</span>
+                                      <span className="text-[11px] text-[#617066] font-normal">
                                         Provider can view in-browser AND download original file attachment to disk.
                                       </span>
                                     </div>
@@ -513,32 +505,32 @@ export const RequestDetailsPage: React.FC = () => {
                               </div>
 
                               {uploadError && (
-                                <div className="p-3 bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs rounded-xl">
+                                <div className="p-3 bg-[#F4D6D6] border border-[#E8B4B4] text-[#5C1D1D] text-xs rounded-xl">
                                   {uploadError}
                                 </div>
                               )}
 
                               {uploadSuccess && (
-                                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs rounded-xl">
+                                <div className="p-3 bg-[#D4E5D4] border border-[#B2D4B2] text-[#1F4724] text-xs rounded-xl font-semibold">
                                   {uploadSuccess}
                                 </div>
                               )}
 
                               {uploadProgressMessage && (
-                                <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs rounded-xl flex items-center gap-2">
+                                <div className="p-3 bg-[#DDE8DC] border border-[#C8D7C7] text-[#29352D] text-xs rounded-xl flex items-center gap-2">
                                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                                   <span>{uploadProgressMessage}</span>
                                 </div>
                               )}
 
                               {/* DROPZONE / FILE PICKER */}
-                              <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-xl p-4 text-center transition-colors">
+                              <div className="border-2 border-dashed border-[#C8D7C7] hover:border-[#7C9A82] rounded-xl p-4 text-center transition-colors">
                                 <label className="cursor-pointer block">
-                                  <Plus className="w-6 h-6 text-indigo-400 mx-auto mb-1" />
-                                  <span className="text-xs font-semibold text-slate-200">
+                                  <Plus className="w-6 h-6 text-[#7C9A82] mx-auto mb-1" />
+                                  <span className="text-xs font-bold text-[#29352D]">
                                     Click to Select Documents
                                   </span>
-                                  <span className="text-[10px] text-slate-500 block mt-0.5">
+                                  <span className="text-[10px] text-[#617066] block mt-0.5">
                                     Supports PDF, JPG, PNG (Select multiple files at once)
                                   </span>
                                   <input
@@ -554,7 +546,7 @@ export const RequestDetailsPage: React.FC = () => {
                               {/* PENDING FILES QUEUE LIST */}
                               {pendingItems.length > 0 && (
                                 <div className="space-y-3 pt-2">
-                                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                                  <span className="text-xs font-bold text-[#617066] uppercase tracking-wider block">
                                     Selected Files Queue ({pendingItems.length})
                                   </span>
 
@@ -562,19 +554,19 @@ export const RequestDetailsPage: React.FC = () => {
                                     {pendingItems.map((item) => (
                                       <div
                                         key={item.id}
-                                        className="p-3 bg-slate-900 border border-slate-800 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                                        className="p-3 bg-[#F0F4EC] border border-[#C8D7C7] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                                       >
                                         <div className="flex items-center gap-3 flex-1">
-                                          <FileText className="w-5 h-5 text-indigo-400 shrink-0" />
+                                          <FileText className="w-5 h-5 text-[#7C9A82] shrink-0" />
                                           <div className="flex-1 space-y-1">
                                             <input
                                               type="text"
                                               value={item.title}
                                               onChange={(e) => handleTitleChange(item.id, e.target.value)}
                                               placeholder="Document title..."
-                                              className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                              className="w-full bg-[#FAFCF9] border border-[#C8D7C7] rounded-lg px-2.5 py-1 text-[#29352D] text-xs focus:outline-none focus:ring-1 focus:ring-[#7C9A82]"
                                             />
-                                            <span className="text-[10px] text-slate-500 block truncate">
+                                            <span className="text-[10px] text-[#617066] block truncate">
                                               File: {item.file.name} ({(item.file.size / 1024).toFixed(1)} KB)
                                             </span>
                                           </div>
@@ -583,7 +575,7 @@ export const RequestDetailsPage: React.FC = () => {
                                         <button
                                           type="button"
                                           onClick={() => handleRemovePendingItem(item.id)}
-                                          className="text-slate-500 hover:text-rose-400 p-1 self-end sm:self-center transition-colors"
+                                          className="text-[#617066] hover:text-[#5C1D1D] p-1 self-end sm:self-center transition-colors"
                                           title="Remove File"
                                         >
                                           <Trash2 className="w-4 h-4" />
@@ -592,8 +584,8 @@ export const RequestDetailsPage: React.FC = () => {
                                     ))}
                                   </div>
 
-                                  <div className="flex items-center justify-between pt-3 border-t border-slate-800">
-                                    <span className="text-[11px] text-slate-400">
+                                  <div className="flex items-center justify-between pt-3 border-t border-[#C8D7C7]">
+                                    <span className="text-[11px] text-[#617066]">
                                       Files will be stored securely and shared with permission level: <strong>{sharePermission}</strong>.
                                     </span>
 
@@ -614,7 +606,7 @@ export const RequestDetailsPage: React.FC = () => {
                             {/* CURRENTLY ATTACHED / SHARED DOCUMENTS VAULT */}
                             {myDocuments.length > 0 && (
                               <div className="pt-2 space-y-3">
-                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                                <span className="text-xs font-bold text-[#617066] uppercase tracking-wider block">
                                   Your Vault Documents & Access Security Status ({myDocuments.length})
                                 </span>
 
@@ -622,12 +614,12 @@ export const RequestDetailsPage: React.FC = () => {
                                   {myDocuments.map((doc) => (
                                     <div
                                       key={doc.id}
-                                      className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between gap-3 text-xs"
+                                      className="p-3 bg-[#FAFCF9] border border-[#C8D7C7] rounded-xl flex items-center justify-between gap-3 text-xs"
                                     >
                                       <div className="flex items-center gap-2.5 truncate">
-                                        <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+                                        <FileText className="w-4 h-4 text-[#7C9A82] shrink-0" />
                                         <div className="truncate">
-                                          <span className="font-semibold text-slate-200 block truncate">
+                                          <span className="font-bold text-[#29352D] block truncate">
                                             {doc.title}
                                           </span>
                                           <div className="mt-1">
@@ -640,7 +632,7 @@ export const RequestDetailsPage: React.FC = () => {
                                         <button
                                           type="button"
                                           onClick={() => setManagingDoc(doc)}
-                                          className="p-1.5 bg-slate-900 hover:bg-slate-800 text-indigo-300 rounded-lg border border-slate-800 transition-colors"
+                                          className="p-1.5 bg-[#F0F4EC] hover:bg-[#DDE8DC] text-[#29352D] rounded-lg border border-[#C8D7C7] transition-colors"
                                           title="Manage Access & Permissions"
                                         >
                                           <Key className="w-3.5 h-3.5" />
@@ -650,7 +642,7 @@ export const RequestDetailsPage: React.FC = () => {
                                           href={documentsApi.getDocumentDownloadUrl(doc.id)}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="p-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 rounded-lg border border-slate-800 transition-colors"
+                                          className="p-1.5 bg-[#F0F4EC] hover:bg-[#DDE8DC] text-[#7C9A82] rounded-lg border border-[#C8D7C7] transition-colors"
                                           title="Download File"
                                         >
                                           <Download className="w-3.5 h-3.5" />
@@ -671,41 +663,41 @@ export const RequestDetailsPage: React.FC = () => {
             </div>
 
             {/* Detailed Parameters Card */}
-            <Card className="p-6 border-slate-800 bg-slate-900/90 shadow-xl space-y-6">
+            <Card className="p-6">
               <div>
-                <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-indigo-400" /> Description of Legal Problem
+                <h2 className="text-xs font-bold text-[#617066] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4 text-[#7C9A82]" /> Description of Legal Problem
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-slate-950 p-4 rounded-xl border border-slate-800/80 whitespace-pre-wrap">
+                <p className="text-xs sm:text-sm text-[#29352D] leading-relaxed bg-[#FAFCF9] p-4 rounded-xl border border-[#C8D7C7] whitespace-pre-wrap">
                   {request.description}
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase block mb-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs mt-6">
+                <div className="bg-[#FAFCF9] p-3.5 rounded-xl border border-[#C8D7C7]">
+                  <span className="text-[10px] font-bold text-[#617066] uppercase block mb-1">
                     Location
                   </span>
-                  <span className="text-slate-200 font-medium flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-400" /> {request.location}
+                  <span className="text-[#29352D] font-bold flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#7C9A82]" /> {request.location}
                   </span>
                 </div>
 
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase block mb-1">
+                <div className="bg-[#FAFCF9] p-3.5 rounded-xl border border-[#C8D7C7]">
+                  <span className="text-[10px] font-bold text-[#617066] uppercase block mb-1">
                     Preferred Provider Type
                   </span>
-                  <span className="text-slate-200 font-medium">
+                  <span className="text-[#29352D] font-bold">
                     {request.preferred_provider_type}
                   </span>
                 </div>
 
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase block mb-1">
+                <div className="bg-[#FAFCF9] p-3.5 rounded-xl border border-[#C8D7C7]">
+                  <span className="text-[10px] font-bold text-[#617066] uppercase block mb-1">
                     Urgency Level
                   </span>
-                  <span className="text-slate-200 font-medium flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-400" /> {request.urgency}
+                  <span className="text-[#29352D] font-bold flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#9A8FB5]" /> {request.urgency}
                   </span>
                 </div>
               </div>
@@ -716,38 +708,38 @@ export const RequestDetailsPage: React.FC = () => {
 
       {/* MANAGE ACCESS MODAL */}
       {managingDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <Card className="max-w-lg w-full p-6 border-slate-800 bg-slate-900 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#29352D]/50 backdrop-blur-sm">
+          <Card className="max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#C8D7C7] pb-3">
               <div className="flex items-center gap-2">
-                <Key className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-base font-bold text-slate-100">
+                <Key className="w-5 h-5 text-[#7C9A82]" />
+                <h3 className="text-base font-bold text-[#29352D]">
                   Manage Access — {managingDoc.title}
                 </h3>
               </div>
               <button
                 onClick={() => setManagingDoc(null)}
-                className="text-slate-400 hover:text-slate-200"
+                className="text-[#617066] hover:text-[#29352D]"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl">
+              <div className="flex items-center justify-between p-3 bg-[#FAFCF9] border border-[#C8D7C7] rounded-xl">
                 <div>
-                  <span className="text-slate-400 font-medium block">Document Title: {managingDoc.title}</span>
-                  <span className="text-slate-500 text-[11px] block">Filename: {managingDoc.filename}</span>
+                  <span className="text-[#29352D] font-bold block">Document Title: {managingDoc.title}</span>
+                  <span className="text-[#617066] text-[11px] block">Filename: {managingDoc.filename}</span>
                 </div>
                 <div>{renderSecurityStatusBadge(managingDoc)}</div>
               </div>
 
-              <h4 className="font-bold text-slate-200 uppercase tracking-wider text-[11px] pt-1">
+              <h4 className="font-bold text-[#29352D] uppercase tracking-wider text-[11px] pt-1">
                 Active & Revoked Share Grants
               </h4>
 
               {(!managingDoc.shares || managingDoc.shares.length === 0) ? (
-                <p className="text-slate-400 text-xs italic p-3 bg-slate-950 rounded-xl border border-slate-800">
+                <p className="text-[#617066] text-xs italic p-3 bg-[#FAFCF9] rounded-xl border border-[#C8D7C7]">
                   This document is currently PRIVATE to you. No providers have been granted access.
                 </p>
               ) : (
@@ -755,21 +747,21 @@ export const RequestDetailsPage: React.FC = () => {
                   {managingDoc.shares.map((share) => (
                     <div
                       key={share.id}
-                      className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs"
+                      className="p-3 bg-[#FAFCF9] border border-[#C8D7C7] rounded-xl flex items-center justify-between text-xs"
                     >
                       <div className="space-y-1">
-                        <span className="font-semibold text-slate-200 block">
+                        <span className="font-bold text-[#29352D] block">
                           Provider ID #{share.shared_with_provider_id}
                         </span>
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             share.permission === DocumentSharePermission.VIEW_AND_DOWNLOAD
-                              ? 'bg-emerald-500/10 text-emerald-300'
-                              : 'bg-indigo-500/10 text-indigo-300'
+                              ? 'bg-[#D4E5D4] text-[#1F4724]'
+                              : 'bg-[#E6E2F0] text-[#3D3352]'
                           }`}>
                             {share.permission === DocumentSharePermission.VIEW_AND_DOWNLOAD ? 'View + Download' : 'View Only'}
                           </span>
-                          <span className="text-slate-500 text-[10px]">
+                          <span className="text-[#617066] text-[10px]">
                             Status: {share.status}
                           </span>
                         </div>
@@ -785,7 +777,7 @@ export const RequestDetailsPage: React.FC = () => {
                           Revoke Access
                         </Button>
                       ) : (
-                        <span className="text-slate-500 text-[11px] font-medium">Access Revoked</span>
+                        <span className="text-[#617066] text-[11px] font-semibold">Access Revoked</span>
                       )}
                     </div>
                   ))}
@@ -793,7 +785,7 @@ export const RequestDetailsPage: React.FC = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#C8D7C7]">
               <Button variant="outline" size="sm" onClick={() => setManagingDoc(null)}>
                 Close
               </Button>

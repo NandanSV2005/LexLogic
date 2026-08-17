@@ -21,19 +21,19 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-semibold transition-all duration-200 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]';
+    'inline-flex items-center justify-center font-semibold transition-all duration-200 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7C9A82] focus-visible:ring-offset-2 focus-visible:ring-offset-[#E8F0E6] disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]';
 
   const variantStyles = {
     primary:
-      'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/25 border border-indigo-500/40 focus-visible:ring-indigo-500',
+      'bg-[#7C9A82] hover:bg-[#6B8870] text-white shadow-sm border border-[#6B8870]',
     secondary:
-      'bg-slate-800 hover:bg-slate-750 hover:bg-slate-700 text-slate-100 border border-slate-700 focus-visible:ring-slate-500',
+      'bg-[#DDE8DC] hover:bg-[#D2E2D0] text-[#29352D] border border-[#C8D7C7]',
     outline:
-      'border border-slate-700 hover:border-slate-600 hover:bg-slate-800/80 text-slate-200 focus-visible:ring-slate-400',
+      'border border-[#7C9A82] hover:bg-[#DDE8DC] text-[#29352D]',
     danger:
-      'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/25 border border-rose-500/40 focus-visible:ring-rose-500',
+      'bg-[#F4D6D6] hover:bg-[#ECC3C3] text-[#5C1D1D] border border-[#E8B4B4]',
     ghost:
-      'text-slate-300 hover:bg-slate-800/50 hover:text-white focus-visible:ring-slate-500 border border-transparent',
+      'text-[#29352D] hover:bg-[#DDE8DC] border border-transparent',
   };
 
   const sizeStyles = {

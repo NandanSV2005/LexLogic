@@ -15,26 +15,26 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full flex flex-col gap-1.5 text-left">
         {label && (
-          <label htmlFor={inputId} className="text-xs font-semibold text-slate-300 tracking-wide uppercase">
+          <label htmlFor={inputId} className="text-xs font-semibold text-[#29352D] tracking-wide uppercase">
             {label}
           </label>
         )}
         <div className="relative flex items-center">
-          {leftIcon && <div className="absolute left-3 text-slate-400 pointer-events-none">{leftIcon}</div>}
+          {leftIcon && <div className="absolute left-3 text-[#617066] pointer-events-none">{leftIcon}</div>}
           <input
             id={inputId}
             ref={ref}
-            className={`w-full bg-slate-950 border text-slate-100 text-xs sm:text-sm rounded-xl px-3.5 py-2.5 transition-all duration-200 placeholder-slate-500 focus:outline-none focus:ring-2 ${
+            className={`w-full bg-[#FAFCF9] border text-[#29352D] text-xs sm:text-sm rounded-xl px-3.5 py-2.5 transition-all duration-200 placeholder-[#8C9B90] focus:outline-none focus:ring-2 ${
               error
-                ? 'border-rose-500/80 focus:ring-rose-500/50'
-                : 'border-slate-800 hover:border-slate-700 focus:border-indigo-500 focus:ring-indigo-500/50'
+                ? 'border-[#F4D6D6] focus:ring-[#E8B4B4]'
+                : 'border-[#C8D7C7] hover:border-[#7C9A82] focus:border-[#7C9A82] focus:ring-[#7C9A82]/30'
             } ${leftIcon ? 'pl-10' : ''} ${rightIcon ? 'pr-10' : ''} ${className}`}
             {...props}
           />
-          {rightIcon && <div className="absolute right-3 text-slate-400">{rightIcon}</div>}
+          {rightIcon && <div className="absolute right-3 text-[#617066]">{rightIcon}</div>}
         </div>
-        {error && <span className="text-xs text-rose-400 font-medium">{error}</span>}
-        {!error && helperText && <span className="text-xs text-slate-400 leading-relaxed">{helperText}</span>}
+        {error && <span className="text-xs text-[#5C1D1D] font-medium">{error}</span>}
+        {!error && helperText && <span className="text-xs text-[#617066] leading-relaxed">{helperText}</span>}
       </div>
     );
   }

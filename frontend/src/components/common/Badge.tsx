@@ -25,15 +25,15 @@ export const Badge: React.FC<BadgeProps> = ({
   className = '',
 }) => {
   const variantStyles: Record<BadgeVariant, string> = {
-    success: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
-    warning: 'bg-amber-500/10 text-amber-400 border-amber-500/30',
-    error: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-    danger: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
-    info: 'bg-sky-500/10 text-sky-400 border-sky-500/30',
-    neutral: 'bg-slate-800 text-slate-300 border-slate-700',
-    indigo: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
-    purple: 'bg-purple-500/10 text-purple-300 border-purple-500/30',
-    primary: 'bg-indigo-600/20 text-indigo-300 border-indigo-500/30',
+    success: 'bg-[#D4E5D4] text-[#1F4724] border-[#B2D4B2]',
+    warning: 'bg-[#F5E6CC] text-[#5C4114] border-[#E6CE9F]',
+    error: 'bg-[#F4D6D6] text-[#5C1D1D] border-[#E8B4B4]',
+    danger: 'bg-[#F4D6D6] text-[#5C1D1D] border-[#E8B4B4]',
+    info: 'bg-[#D5E3F0] text-[#1C3B57] border-[#ADCDE6]',
+    neutral: 'bg-[#E2E8E2] text-[#3A473E] border-[#C4D0C4]',
+    indigo: 'bg-[#E6E2F0] text-[#3D3352] border-[#CBBFE0]',
+    purple: 'bg-[#E6E2F0] text-[#3D3352] border-[#CBBFE0]',
+    primary: 'bg-[#DCE7DB] text-[#29352D] border-[#B9CBB7]',
   };
 
   const sizeStyles = {
@@ -43,7 +43,7 @@ export const Badge: React.FC<BadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center font-bold rounded-xl border tracking-wide uppercase ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`inline-flex items-center font-semibold rounded-lg border tracking-wide ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
     >
       {children}
     </span>
