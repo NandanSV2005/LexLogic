@@ -8,7 +8,7 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000,
+  timeout: 60000,
 });
 
 // Attach JWT Bearer token if present in sessionStorage or localStorage
@@ -28,7 +28,11 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError<APIErrorResponse>) => {
     const status = error.response?.status;
-    const detail = error.response?.data?.detail || error.message || 'An unexpected error occurred';
+    let detail = error.response?.data?.detail || error.message || 'An unexpected error occurred';
+
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      detail = 'Server connection timed out while waking up (free tier cold start). Please wait a few seconds and try again.';
+    }
 
     if (status === 401) {
       // Clear token on 401 Unauthorized (unless logging in or registering)
@@ -49,3 +53,4 @@ apiClient.interceptors.response.use(
     });
   }
 );
+
