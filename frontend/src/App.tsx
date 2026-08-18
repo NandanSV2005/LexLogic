@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UserRole } from './types';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
@@ -22,6 +22,35 @@ import { AdminAuditPage } from './pages/admin/AdminAuditPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { LoadingState } from './components/common/LoadingState';
+
+const RouteTitleUpdater: React.FC = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.startsWith('/citizen')) {
+      if (path.includes('/request/new')) {
+        document.title = 'LexLogic | Service Request';
+      } else if (path.includes('/matches')) {
+        document.title = 'LexLogic | Provider Matching';
+      } else {
+        document.title = 'LexLogic | Citizen Portal';
+      }
+    } else if (path.startsWith('/provider')) {
+      document.title = 'LexLogic | Provider Portal';
+    } else if (path.startsWith('/admin')) {
+      document.title = 'LexLogic | Admin Portal';
+    } else if (path === '/login') {
+      document.title = 'LexLogic | Sign In';
+    } else if (path === '/register') {
+      document.title = 'LexLogic | Register';
+    } else {
+      document.title = 'LexLogic';
+    }
+  }, [location]);
+
+  return null;
+};
 
 const RootRedirect: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -56,6 +85,7 @@ const RootRedirect: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <Router>
+      <RouteTitleUpdater />
       <AuthProvider>
         <Routes>
           {/* Public Routes */}
