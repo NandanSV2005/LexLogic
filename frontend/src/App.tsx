@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { UserRole } from './types';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { LandingPage } from './pages/LandingPage';
@@ -21,7 +21,6 @@ import { AdminProviderDetailsPage } from './pages/admin/AdminProviderDetailsPage
 import { AdminAuditPage } from './pages/admin/AdminAuditPage';
 import { UnauthorizedPage } from './pages/UnauthorizedPage';
 import { NotFoundPage } from './pages/NotFoundPage';
-import { LoadingState } from './components/common/LoadingState';
 
 const RouteTitleUpdater: React.FC = () => {
   const location = useLocation();
@@ -45,41 +44,11 @@ const RouteTitleUpdater: React.FC = () => {
     } else if (path === '/register') {
       document.title = 'LexLogic | Register';
     } else {
-      document.title = 'LexLogic';
+      document.title = 'LexLogic — Service-First Legal Access Platform';
     }
   }, [location]);
 
   return null;
-};
-
-const RootRedirect: React.FC = () => {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <LoadingState message="Loading LexLogic application..." />
-      </div>
-    );
-  }
-
-  // If unauthenticated, show public landing page
-  if (!isAuthenticated || !user) {
-    return <LandingPage />;
-  }
-
-  // If authenticated, redirect to user role dashboard
-  if (user.role === UserRole.CITIZEN) {
-    return <Navigate to="/citizen/dashboard" replace />;
-  }
-  if (user.role === UserRole.PROVIDER) {
-    return <Navigate to="/provider/dashboard" replace />;
-  }
-  if (user.role === UserRole.ADMIN) {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
-
-  return <LandingPage />;
 };
 
 export const App: React.FC = () => {
@@ -89,7 +58,7 @@ export const App: React.FC = () => {
       <AuthProvider>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<RootRedirect />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
