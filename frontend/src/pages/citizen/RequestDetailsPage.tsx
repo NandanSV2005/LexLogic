@@ -18,6 +18,9 @@ import {
   X,
   RefreshCw,
   UserCheck,
+  Award,
+  Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 import { Navbar } from '../../components/layout/Navbar';
 import { Card } from '../../components/common/Card';
@@ -53,6 +56,7 @@ export const RequestDetailsPage: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [isConfirmingCompletion, setIsConfirmingCompletion] = useState<boolean>(false);
 
   // Multi-Document Upload & Permission State
   const [pendingItems, setPendingItems] = useState<PendingUploadItem[]>([]);
@@ -120,19 +124,19 @@ export const RequestDetailsPage: React.FC = () => {
     }
   };
 
-  const handleDeclineProvider = async (providerId: number) => {
+  const handleConfirmCompletion = async () => {
     if (!requestId) return;
-    setActionLoadingId(providerId);
+    setIsConfirmingCompletion(true);
     setErrorMessage(null);
 
     try {
-      await requestsApi.acceptProvider(Number(requestId), providerId);
-      setSuccessMessage('Provider updated.');
+      await requestsApi.confirmCompletion(Number(requestId));
+      setSuccessMessage('Service completion CONFIRMED! Request is now officially COMPLETED.');
       await fetchRequestDetails();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to update provider.');
+      setErrorMessage(err.message || 'Failed to confirm service completion.');
     } finally {
-      setActionLoadingId(null);
+      setIsConfirmingCompletion(false);
     }
   };
 
@@ -260,6 +264,31 @@ export const RequestDetailsPage: React.FC = () => {
     );
   };
 
+  // 6-step lifecycle progress calculation
+  const getLifecycleStepIndex = (status?: RequestStatus): number => {
+    if (!status) return 1;
+    switch (status) {
+      case RequestStatus.OPEN:
+        return interestedProviders.length > 0 ? 3 : 1;
+      case RequestStatus.MATCHED:
+        return 2;
+      case RequestStatus.CONTACTED:
+        return 3;
+      case RequestStatus.IN_PROGRESS:
+        return 4;
+      case RequestStatus.COMPLETION_REQUESTED:
+        return 5;
+      case RequestStatus.COMPLETED:
+        return 6;
+      default:
+        return 1;
+    }
+  };
+
+  const currentStep = getLifecycleStepIndex(request?.status);
+
+  const acceptedProvider = interestedProviders.find((p) => p.interaction_status === InteractionStatus.ACCEPTED);
+
   return (
     <div className="min-h-screen bg-[#E8F0E6] text-[#29352D] flex flex-col">
       <Navbar />
@@ -279,8 +308,8 @@ export const RequestDetailsPage: React.FC = () => {
                 Request Details #{requestId}
               </h1>
               {request && (
-                <Badge variant={request.status === RequestStatus.COMPLETED ? 'success' : 'info'}>
-                  {request.status}
+                <Badge variant={request.status === RequestStatus.COMPLETED ? 'success' : request.status === RequestStatus.COMPLETION_REQUESTED ? 'warning' : 'info'}>
+                  {request.status.replace('_', ' ')}
                 </Badge>
               )}
             </div>
@@ -324,7 +353,100 @@ export const RequestDetailsPage: React.FC = () => {
 
         {!isLoading && request && (
           <div className="space-y-8">
-            {/* Interested Providers Section */}
+            {/* SERVICE LIFECYCLE PROGRESS STEPPER */}
+            <Card className="p-6">
+              <h3 className="text-xs font-bold text-[#617066] uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#7C9A82]" /> Service Journey Lifecycle
+              </h3>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-xs">
+                {[
+                  { step: 1, label: 'Request Created' },
+                  { step: 2, label: 'Providers Matched' },
+                  { step: 3, label: 'Interest Received' },
+                  { step: 4, label: 'Provider Connected' },
+                  { step: 5, label: 'Completion Requested' },
+                  { step: 6, label: 'Service Completed' },
+                ].map((s) => {
+                  const isDone = currentStep > s.step;
+                  const isCurrent = currentStep === s.step;
+                  return (
+                    <div
+                      key={s.step}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all ${
+                        isCurrent
+                          ? 'bg-[#DDE8DC] border-[#7C9A82] text-[#29352D] font-bold shadow-sm'
+                          : isDone
+                          ? 'bg-[#D4E5D4] border-[#B2D4B2] text-[#1F4724] font-semibold'
+                          : 'bg-[#FAFCF9] border-[#C8D7C7] text-[#617066]'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        isCurrent
+                          ? 'bg-[#7C9A82] text-white'
+                          : isDone
+                          ? 'bg-[#1F4724] text-white'
+                          : 'bg-[#C8D7C7] text-[#617066]'
+                      }`}>
+                        {isDone ? '✓' : s.step}
+                      </div>
+                      <span className="text-[11px] leading-tight">{s.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+
+            {/* COMPLETION REQUESTED CITIZEN CONFIRMATION BANNER */}
+            {request.status === RequestStatus.COMPLETION_REQUESTED && (
+              <div className="p-6 bg-[#F5E6CC] border border-[#E6CE9F] rounded-2xl shadow-sm space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-6 h-6 text-[#5C4114] shrink-0 mt-0.5" />
+                    <div>
+                      <h3 className="text-base font-extrabold text-[#5C4114]">
+                        Provider has marked this service as COMPLETED
+                      </h3>
+                      <p className="text-xs text-[#5C4114] mt-1 leading-relaxed">
+                        {acceptedProvider
+                          ? `${acceptedProvider.full_name} (${acceptedProvider.provider_type}) has submitted completion for your service request.`
+                          : 'Your assigned provider has marked work completed on this request.'}{' '}
+                        Please review the completed work and confirm below to close this request and award provider incentive points.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    size="md"
+                    isLoading={isConfirmingCompletion}
+                    onClick={handleConfirmCompletion}
+                    leftIcon={<CheckCircle2 className="w-4 h-4" />}
+                    className="shrink-0"
+                  >
+                    Confirm Completion
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* COMPLETED BANNER */}
+            {request.status === RequestStatus.COMPLETED && (
+              <div className="p-6 bg-[#D4E5D4] border border-[#B2D4B2] text-[#1F4724] rounded-2xl shadow-sm flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Award className="w-8 h-8 text-[#1F4724] shrink-0" />
+                  <div>
+                    <h3 className="text-base font-extrabold text-[#1F4724]">Service Successfully Completed</h3>
+                    <p className="text-xs text-[#1F4724] mt-0.5">
+                      This service request has been fully resolved and confirmed.
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="success">Resolved & Closed</Badge>
+              </div>
+            )}
+
+            {/* Interested Providers / Connected Provider Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -349,11 +471,13 @@ export const RequestDetailsPage: React.FC = () => {
                 <div className="space-y-4">
                   {interestedProviders.map((prov) => {
                     const isAccepted = prov.interaction_status === InteractionStatus.ACCEPTED;
+                    const isDeclined = prov.interaction_status === InteractionStatus.DECLINED;
+
                     return (
                       <Card
                         key={prov.provider_id}
                         className={`p-6 transition-all ${
-                          isAccepted ? 'ring-2 ring-[#7C9A82]' : ''
+                          isAccepted ? 'ring-2 ring-[#7C9A82]' : isDeclined ? 'opacity-60' : ''
                         }`}
                       >
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -368,6 +492,9 @@ export const RequestDetailsPage: React.FC = () => {
                                 <Badge variant="info">
                                   ✓ Representation Active
                                 </Badge>
+                              )}
+                              {isDeclined && (
+                                <Badge variant="neutral">Declined</Badge>
                               )}
                             </div>
 
@@ -385,33 +512,22 @@ export const RequestDetailsPage: React.FC = () => {
                           </div>
 
                           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
-                            {prov.interaction_status === InteractionStatus.PENDING ? (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  isLoading={actionLoadingId === prov.provider_id}
-                                  onClick={() => handleDeclineProvider(prov.provider_id)}
-                                >
-                                  Decline
-                                </Button>
-
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  isLoading={actionLoadingId === prov.provider_id}
-                                  onClick={() => handleAcceptProvider(prov.provider_id)}
-                                  leftIcon={<CheckCircle2 className="w-4 h-4" />}
-                                >
-                                  Accept & Engage Provider
-                                </Button>
-                              </>
+                            {prov.interaction_status === InteractionStatus.PENDING || prov.interaction_status === InteractionStatus.CONTACTED ? (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                isLoading={actionLoadingId === prov.provider_id}
+                                onClick={() => handleAcceptProvider(prov.provider_id)}
+                                leftIcon={<CheckCircle2 className="w-4 h-4" />}
+                              >
+                                Accept & Engage Provider
+                              </Button>
                             ) : prov.interaction_status === InteractionStatus.ACCEPTED ? (
                               <div className="p-3 bg-[#D4E5D4] border border-[#B2D4B2] rounded-xl text-[#1F4724] text-xs font-semibold flex items-center gap-2">
                                 <CheckCircle2 className="w-4 h-4 text-[#1F4724]" /> Active Representation
                               </div>
                             ) : (
-                              <Badge variant="neutral">Declined</Badge>
+                              <span className="text-xs text-[#617066] font-semibold italic">Not Selected</span>
                             )}
                           </div>
                         </div>

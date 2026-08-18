@@ -31,6 +31,8 @@ class ServiceRequestOut(BaseModel):
     urgency: RequestUrgency
     legal_aid_interest: bool
     status: RequestStatus
+    accepted_provider_id: Optional[int] = None
+    accepted_provider_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

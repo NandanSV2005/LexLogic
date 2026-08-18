@@ -17,6 +17,7 @@ class RequestStatus(str, enum.Enum):
     MATCHED = "MATCHED"
     CONTACTED = "CONTACTED"
     IN_PROGRESS = "IN_PROGRESS"
+    COMPLETION_REQUESTED = "COMPLETION_REQUESTED"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
 
@@ -64,6 +65,25 @@ class ServiceRequest(Base):
     provider_interactions: Mapped[List["RequestProvider"]] = relationship(
         "RequestProvider", back_populates="request", cascade="all, delete-orphan"
     )
+
+    @property
+    def accepted_interaction(self) -> Optional["RequestProvider"]:
+        if not self.provider_interactions:
+            return None
+        for inter in self.provider_interactions:
+            if inter.status == InteractionStatus.ACCEPTED:
+                return inter
+        return None
+
+    @property
+    def accepted_provider_id(self) -> Optional[int]:
+        inter = self.accepted_interaction
+        return inter.provider_id if inter else None
+
+    @property
+    def accepted_provider_name(self) -> Optional[str]:
+        inter = self.accepted_interaction
+        return inter.provider.full_name if (inter and inter.provider) else None
 
 
 class RequestProvider(Base):

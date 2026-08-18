@@ -14,6 +14,7 @@ import {
   Provider,
   ProviderDashboardMetrics,
   ServiceRequest,
+  RequestStatus,
   AvailabilityStatus,
   VerificationStatus,
   PointTransactionOut,
@@ -34,6 +35,7 @@ import {
   X,
   Briefcase,
   AlertTriangle,
+  Award,
 } from 'lucide-react';
 
 export const ProviderDashboardPage: React.FC = () => {
@@ -137,7 +139,7 @@ export const ProviderDashboardPage: React.FC = () => {
 
     try {
       await requestsApi.respondToRequest(requestId, 'ACCEPT');
-      setSuccessMessage(`Expressed interest in Request #${requestId}! Added to ${profConfig.activeWorkLabel}.`);
+      setSuccessMessage(`Expressed interest in Request #${requestId}! Added to Pending Interests.`);
       await fetchDashboardData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to express interest in request.');
@@ -146,16 +148,16 @@ export const ProviderDashboardPage: React.FC = () => {
     }
   };
 
-  const handleCompleteRequest = async (requestId: number) => {
+  const handleRequestCompletion = async (requestId: number) => {
     setActionLoadingId(requestId);
     setErrorMessage(null);
 
     try {
-      await requestsApi.completeRequest(requestId);
-      setSuccessMessage(`Marked Request #${requestId} as COMPLETED! Points awarded & reliability updated.`);
+      await requestsApi.requestCompletion(requestId);
+      setSuccessMessage(`Requested completion for Request #${requestId}! Awaiting Citizen confirmation.`);
       await fetchDashboardData();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to complete request.');
+      setErrorMessage(err.message || 'Failed to request completion for service.');
     } finally {
       setActionLoadingId(null);
     }
@@ -202,6 +204,15 @@ export const ProviderDashboardPage: React.FC = () => {
       setIsSubmittingDocs(false);
     }
   };
+
+  // Split interacted cases into clear backend status categories
+  const activeCases = myCases.filter(
+    (r) => r.status === RequestStatus.IN_PROGRESS || r.status === RequestStatus.COMPLETION_REQUESTED
+  );
+  const pendingInterestCases = myCases.filter(
+    (r) => r.status === RequestStatus.CONTACTED || r.status === RequestStatus.OPEN
+  );
+  const completedCases = myCases.filter((r) => r.status === RequestStatus.COMPLETED);
 
   return (
     <div className="min-h-screen bg-[#E8F0E6] text-[#29352D] flex flex-col">
@@ -282,7 +293,7 @@ export const ProviderDashboardPage: React.FC = () => {
                   </div>
                 </div>
                 <span className="text-2xl font-extrabold text-[#29352D] mt-2 block">
-                  {myCases.length}
+                  {activeCases.length}
                 </span>
                 <span className="text-[11px] text-[#617066] mt-1 block">Active engagements</span>
               </Card>
@@ -300,7 +311,7 @@ export const ProviderDashboardPage: React.FC = () => {
                   {metrics.completed_requests}
                 </span>
                 <span className="text-[11px] text-[#7C9A82] mt-1 block font-semibold">
-                  {metrics.completed_requests > 0 ? 'Resolution active' : 'No resolutions yet'}
+                  {metrics.completed_requests > 0 ? 'Resolutions completed' : 'No resolutions yet'}
                 </span>
               </Card>
 
@@ -445,36 +456,38 @@ export const ProviderDashboardPage: React.FC = () => {
               </Card>
             </div>
 
-            {/* CURRENT ACTIVE WORK FEED */}
+            {/* SECTION 1: ACTIVE WORK FEED */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-extrabold text-[#29352D] tracking-tight flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-[#7C9A82]" /> {profConfig.activeWorkLabel} ({myCases.length})
+                    <Briefcase className="w-5 h-5 text-[#7C9A82]" /> {profConfig.activeWorkLabel} ({activeCases.length})
                   </h3>
                   <p className="text-xs text-[#617066]">
-                    Service requests where you have expressed interest or engaged as a {profConfig.label}.
+                    Service requests accepted by citizen where active representation is underway.
                   </p>
                 </div>
               </div>
 
-              {myCases.length === 0 ? (
+              {activeCases.length === 0 ? (
                 <EmptyState
-                  title={`No ${profConfig.activeWorkLabel} Yet`}
-                  description={`Click 'Express Interest' on eligible ${profConfig.requestLabel.toLowerCase()} below to add items to your active feed.`}
+                  title={`No ${profConfig.activeWorkLabel} Currently Active`}
+                  description={`Once a citizen accepts your expressed interest, the request will move here as active work.`}
                 />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {myCases.map((req) => (
-                    <Card key={req.id} className="p-5 space-y-3">
+                  {activeCases.map((req) => (
+                    <Card key={req.id} className="p-5 space-y-3 ring-2 ring-[#7C9A82]">
                       <div className="flex items-center justify-between border-b border-[#C8D7C7] pb-2.5">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-[#7C9A82]">Request #{req.id}</span>
                           <Badge variant="info">{req.service_category}</Badge>
                         </div>
-                        <Badge variant="success">
-                          {req.status === 'IN_PROGRESS' ? 'ASSIGNED' : 'INTEREST EXPRESSED'}
-                        </Badge>
+                        {req.status === RequestStatus.COMPLETION_REQUESTED ? (
+                          <Badge variant="warning">Completion Requested</Badge>
+                        ) : (
+                          <Badge variant="success">IN PROGRESS</Badge>
+                        )}
                       </div>
 
                       <p className="text-xs text-[#29352D] line-clamp-3 leading-relaxed">
@@ -509,16 +522,22 @@ export const ProviderDashboardPage: React.FC = () => {
                           </Button>
                         </div>
 
-                        {req.status !== 'COMPLETED' && (
+                        {req.status === RequestStatus.IN_PROGRESS && (
                           <Button
-                            variant="secondary"
+                            variant="primary"
                             size="sm"
                             isLoading={actionLoadingId === req.id}
-                            onClick={() => handleCompleteRequest(req.id)}
+                            onClick={() => handleRequestCompletion(req.id)}
                             leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
                           >
                             Mark Completed
                           </Button>
+                        )}
+
+                        {req.status === RequestStatus.COMPLETION_REQUESTED && (
+                          <span className="text-xs text-[#5C4114] font-semibold flex items-center gap-1 bg-[#F5E6CC] px-2.5 py-1 rounded-lg">
+                            <Clock className="w-3.5 h-3.5 text-[#5C4114]" /> Awaiting Citizen Confirmation
+                          </span>
                         )}
                       </div>
                     </Card>
@@ -527,7 +546,59 @@ export const ProviderDashboardPage: React.FC = () => {
               )}
             </div>
 
-            {/* ELIGIBLE SERVICE REQUESTS FEED */}
+            {/* SECTION 2: PENDING INTEREST EXPRESSED FEED */}
+            {pendingInterestCases.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-[#29352D] tracking-tight flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#9A8FB5]" /> Pending Citizen Review ({pendingInterestCases.length})
+                    </h3>
+                    <p className="text-xs text-[#617066]">
+                      Requests where you expressed interest and are awaiting citizen acceptance.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {pendingInterestCases.map((req) => (
+                    <Card key={req.id} className="p-5 space-y-3">
+                      <div className="flex items-center justify-between border-b border-[#C8D7C7] pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-[#7C9A82]">Request #{req.id}</span>
+                          <Badge variant="info">{req.service_category}</Badge>
+                        </div>
+                        <Badge variant="purple">Interest Submitted</Badge>
+                      </div>
+
+                      <p className="text-xs text-[#29352D] line-clamp-2 leading-relaxed">
+                        "{req.description}"
+                      </p>
+
+                      <div className="flex items-center justify-between text-[11px] text-[#617066] pt-1">
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5 text-[#7C9A82]" /> {req.location}
+                        </span>
+                        <span className="text-[#617066]">Awaiting Citizen Decision</span>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#C8D7C7]">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedCase(req)}
+                          leftIcon={<Eye className="w-3.5 h-3.5" />}
+                        >
+                          View Details
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SECTION 3: ELIGIBLE SERVICE REQUESTS FEED */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -588,6 +659,45 @@ export const ProviderDashboardPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* SECTION 4: COMPLETED ENGAGEMENTS */}
+            {completedCases.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-bold text-[#29352D] tracking-tight flex items-center gap-2">
+                      <Award className="w-4 h-4 text-[#1F4724]" /> Completed Resolutive Services ({completedCases.length})
+                    </h3>
+                    <p className="text-xs text-[#617066]">
+                      Historical archive of completed services.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {completedCases.map((req) => (
+                    <Card key={req.id} className="p-5 space-y-3 bg-[#FAFCF9]">
+                      <div className="flex items-center justify-between border-b border-[#C8D7C7] pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-[#7C9A82]">Request #{req.id}</span>
+                          <Badge variant="info">{req.service_category}</Badge>
+                        </div>
+                        <Badge variant="success">COMPLETED</Badge>
+                      </div>
+
+                      <p className="text-xs text-[#29352D] line-clamp-2 leading-relaxed">
+                        "{req.description}"
+                      </p>
+
+                      <div className="flex items-center justify-between text-[11px] text-[#617066] pt-1">
+                        <span>Location: {req.location}</span>
+                        <span className="text-[#1F4724] font-semibold">✓ Closed & Awarded</span>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* INCENTIVE POINTS LEDGER */}
             <Card className="p-6">
@@ -673,7 +783,7 @@ export const ProviderDashboardPage: React.FC = () => {
               <div className="p-3 bg-[#F5E6CC] border border-[#E6CE9F] rounded-xl text-[#5C4114] text-[11px] flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-[#5C4114] shrink-0 mt-0.5" />
                 <span>
-                  Expressing interest notifies the citizen and adds this item to your <strong>{profConfig.activeWorkLabel}</strong>. It does NOT automatically grant document access.
+                  Expressing interest notifies the citizen and adds this item to your <strong>Pending Interests</strong>. It does NOT automatically grant document access.
                 </span>
               </div>
             </div>

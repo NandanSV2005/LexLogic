@@ -90,6 +90,64 @@ def respond_to_request(
     return interaction
 
 
+def accept_provider_service(
+    db: Session,
+    req: ServiceRequest,
+    target_interaction: RequestProvider,
+    citizen_user_id: int
+) -> ServiceRequest:
+    """Citizen accepts a provider interest. Sets target interaction to ACCEPTED,
+    declines all other pending/contacted interactions for this request, and advances status to IN_PROGRESS.
+    """
+    target_interaction.status = InteractionStatus.ACCEPTED
+    req.status = RequestStatus.IN_PROGRESS
+
+    # Decline all other provider interactions for this request (Single Active Provider constraint)
+    other_interactions = db.query(RequestProvider).filter(
+        RequestProvider.request_id == req.id,
+        RequestProvider.id != target_interaction.id
+    ).all()
+    for other in other_interactions:
+        if other.status in (InteractionStatus.PENDING, InteractionStatus.CONTACTED):
+            other.status = InteractionStatus.DECLINED
+
+    db.commit()
+    db.refresh(req)
+
+    log_audit(
+        db=db,
+        user_id=citizen_user_id,
+        action="CITIZEN_ACCEPT_PROVIDER",
+        resource_type="service_request",
+        resource_id=req.id,
+        metadata_json={"accepted_provider_id": target_interaction.provider_id}
+    )
+
+    return req
+
+
+def request_completion_service(
+    db: Session,
+    req: ServiceRequest,
+    provider_user_id: int
+) -> ServiceRequest:
+    """Provider requests service completion. Advances status from IN_PROGRESS to COMPLETION_REQUESTED."""
+    req.status = RequestStatus.COMPLETION_REQUESTED
+    db.commit()
+    db.refresh(req)
+
+    log_audit(
+        db=db,
+        user_id=provider_user_id,
+        action="PROVIDER_REQUEST_COMPLETION",
+        resource_type="service_request",
+        resource_id=req.id,
+        metadata_json={"status": RequestStatus.COMPLETION_REQUESTED.value}
+    )
+
+    return req
+
+
 def complete_service_request(
     db: Session,
     req: ServiceRequest,
@@ -100,6 +158,11 @@ def complete_service_request(
     Increments provider completed requests, awards points rewards, and recalculates reliability.
     """
     req.status = RequestStatus.COMPLETED
+
+    if not provider:
+        accepted_inter = req.accepted_interaction
+        if accepted_inter:
+            provider = accepted_inter.provider
 
     if provider:
         provider.completed_requests += 1
@@ -113,7 +176,6 @@ def complete_service_request(
 
         # Recalculate provider reliability score
         calculate_reliability_score(provider)
-
 
     db.commit()
     db.refresh(req)

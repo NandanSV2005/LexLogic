@@ -95,6 +95,7 @@ export enum RequestStatus {
   MATCHED = "MATCHED",
   CONTACTED = "CONTACTED",
   IN_PROGRESS = "IN_PROGRESS",
+  COMPLETION_REQUESTED = "COMPLETION_REQUESTED",
   COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED",
 }
@@ -122,6 +123,8 @@ export interface ServiceRequest {
   urgency: RequestUrgency;
   legal_aid_interest: boolean;
   status: RequestStatus;
+  accepted_provider_id?: number;
+  accepted_provider_name?: string;
   created_at: string;
   updated_at: string;
 }

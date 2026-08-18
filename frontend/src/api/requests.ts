@@ -58,6 +58,16 @@ export const requestsApi = {
     return response.data;
   },
 
+  requestCompletion: async (requestId: number): Promise<ServiceRequest> => {
+    const response = await apiClient.post<ServiceRequest>(`/api/requests/${requestId}/request-completion`);
+    return response.data;
+  },
+
+  confirmCompletion: async (requestId: number): Promise<ServiceRequest> => {
+    const response = await apiClient.post<ServiceRequest>(`/api/requests/${requestId}/confirm-completion`);
+    return response.data;
+  },
+
   listMyProviderCases: async (): Promise<ServiceRequest[]> => {
     const response = await apiClient.get<ServiceRequest[]>('/api/requests/provider/my-cases');
     return response.data;

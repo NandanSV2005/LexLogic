@@ -18,6 +18,8 @@ from app.schemas.request import (
 from app.services.request_service import (
     create_citizen_request,
     respond_to_request,
+    accept_provider_service,
+    request_completion_service,
     complete_service_request,
 )
 from app.services.provider_service import calculate_profile_completion
@@ -224,6 +226,83 @@ def respond_request(
 
 
 @router.post(
+    "/{request_id}/request-completion",
+    response_model=ServiceRequestOut,
+    status_code=status.HTTP_200_OK,
+    summary="Provider marks service as completed (requests citizen confirmation)",
+    description="Provider requests completion of an active service request (IN_PROGRESS -> COMPLETION_REQUESTED)."
+)
+def request_completion(
+    request_id: int,
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> ServiceRequestOut:
+    req = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
+
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
+
+    interaction = db.query(RequestProvider).filter(
+        RequestProvider.request_id == req.id,
+        RequestProvider.provider_id == provider.id,
+        RequestProvider.status == InteractionStatus.ACCEPTED
+    ).first()
+    if not interaction:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not the assigned provider for this service request"
+        )
+
+    if req.status not in (RequestStatus.IN_PROGRESS, RequestStatus.COMPLETION_REQUESTED):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot request completion for a request with status {req.status}"
+        )
+
+    if req.status == RequestStatus.COMPLETION_REQUESTED:
+        return req
+
+    return request_completion_service(db, req, current_user.id)
+
+
+@router.post(
+    "/{request_id}/confirm-completion",
+    response_model=ServiceRequestOut,
+    status_code=status.HTTP_200_OK,
+    summary="Citizen confirms service completion",
+    description="Citizen confirms completion for a service request (COMPLETION_REQUESTED -> COMPLETED). Awards points to provider."
+)
+def confirm_completion(
+    request_id: int,
+    current_user: User = Depends(require_citizen),
+    db: Session = Depends(get_db)
+) -> ServiceRequestOut:
+    req = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
+
+    if req.citizen_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to confirm completion for this request"
+        )
+
+    if req.status == RequestStatus.COMPLETED:
+        return req
+
+    if req.status not in (RequestStatus.IN_PROGRESS, RequestStatus.COMPLETION_REQUESTED):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot confirm completion for a request with status {req.status}"
+        )
+
+    return complete_service_request(db, req)
+
+
+@router.post(
     "/{request_id}/complete",
     response_model=ServiceRequestOut,
     status_code=status.HTTP_200_OK,
@@ -249,6 +328,9 @@ def complete_request(
         ).first()
         if not interaction:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to complete this request")
+
+        if req.status == RequestStatus.IN_PROGRESS:
+            return request_completion_service(db, req, current_user.id)
     elif current_user.role == UserRole.CITIZEN and req.citizen_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to complete this request")
 
@@ -261,7 +343,7 @@ def complete_request(
     response_model=ServiceRequestOut,
     status_code=status.HTTP_200_OK,
     summary="Update request status",
-    description="Updates request status (OPEN, MATCHED, CONTACTED, IN_PROGRESS, COMPLETED, CANCELLED)."
+    description="Updates request status (OPEN, MATCHED, CONTACTED, IN_PROGRESS, COMPLETION_REQUESTED, COMPLETED, CANCELLED)."
 )
 def update_request_status(
     request_id: int,
@@ -365,8 +447,8 @@ def get_interested_providers(
     "/{request_id}/accept-provider/{provider_id}",
     response_model=ServiceRequestOut,
     status_code=status.HTTP_200_OK,
-    summary="Citizen accepts/assigns an advocate provider for their service request",
-    description="Citizen accepts provider interest. Updates interaction status to ACCEPTED and request status to IN_PROGRESS."
+    summary="Citizen accepts/assigns a provider for their service request",
+    description="Citizen accepts provider interest. Updates interaction status to ACCEPTED, declines other provider interests, and advances request status to IN_PROGRESS."
 )
 def accept_provider(
     request_id: int,
@@ -388,12 +470,4 @@ def accept_provider(
     if not target_interaction:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider has not expressed interest in this request")
 
-    # Set target interaction to ACCEPTED and request status to IN_PROGRESS
-    target_interaction.status = InteractionStatus.ACCEPTED
-    req.status = RequestStatus.IN_PROGRESS
-
-    db.commit()
-    db.refresh(req)
-
-    return req
-
+    return accept_provider_service(db, req, target_interaction, current_user.id)
