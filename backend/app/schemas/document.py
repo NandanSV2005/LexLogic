@@ -46,3 +46,20 @@ class DocumentShareCreate(BaseModel):
 
 class DocumentShareRevoke(BaseModel):
     provider_id: int = Field(..., description="ID of the provider to revoke document access from")
+
+
+class DocumentPrivacyItemOut(BaseModel):
+    document_id: int
+    title: str
+    filename: str
+    visibility: DocumentVisibility
+    provider_id: Optional[int] = None
+    provider_name: Optional[str] = None
+    share_status: Optional[DocumentShareStatus] = None
+    permission: Optional[DocumentSharePermission] = None
+
+
+class PrivacySummaryOut(BaseModel):
+    request_id: int
+    citizen_id: int
+    items: List[DocumentPrivacyItemOut]

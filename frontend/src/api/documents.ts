@@ -1,5 +1,5 @@
 import { apiClient, API_BASE_URL } from './client';
-import { DocumentItem, DocumentShareItem, DocumentSharePermission } from '../types';
+import { DocumentItem, DocumentShareItem, DocumentSharePermission, PrivacySummary } from '../types';
 
 export const documentsApi = {
   uploadDocument: async (title: string, file: File): Promise<DocumentItem> => {
@@ -42,6 +42,16 @@ export const documentsApi = {
     const response = await apiClient.post<DocumentShareItem>(`/api/documents/${documentId}/revoke`, {
       provider_id: providerId,
     });
+    return response.data;
+  },
+
+  getPrivacySummary: async (requestId: number): Promise<PrivacySummary> => {
+    const response = await apiClient.get<PrivacySummary>(`/api/documents/privacy-summary/${requestId}`);
+    return response.data;
+  },
+
+  analyzeDocument: async (documentId: number): Promise<any> => {
+    const response = await apiClient.post(`/api/documents/${documentId}/analyze`);
     return response.data;
   },
 

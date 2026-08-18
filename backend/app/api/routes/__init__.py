@@ -6,6 +6,9 @@ from app.api.routes.requests import router as requests_router
 from app.api.routes.matching import router as matching_router
 from app.api.routes.documents import router as documents_router
 from app.api.routes.audit import router as audit_router
+from app.api.routes.workspace import router as workspace_router
+from app.api.routes.navigator import router as navigator_router
+from app.api.routes.appointments import router as appointments_router
 
 __all__ = [
     "health_router",
@@ -16,4 +19,7 @@ __all__ = [
     "matching_router",
     "documents_router",
     "audit_router",
+    "workspace_router",
+    "navigator_router",
+    "appointments_router",
 ]

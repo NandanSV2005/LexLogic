@@ -29,6 +29,11 @@ import { Button } from '../../components/common/Button';
 import { LoadingState } from '../../components/common/LoadingState';
 import { ErrorState } from '../../components/common/ErrorState';
 import { requestsApi, documentsApi } from '../../api';
+import { CaseWorkspaceModal } from '../../components/workspace/CaseWorkspaceModal';
+import { PrivacyCenterModal } from '../../components/privacy/PrivacyCenterModal';
+import { ServiceSchedulingModal } from '../../components/scheduling/ServiceSchedulingModal';
+import { DocumentIntelligenceModal } from '../../components/documents/DocumentIntelligenceModal';
+import { Briefcase, Calendar } from 'lucide-react';
 import {
   ServiceRequest,
   RequestStatus,
@@ -69,6 +74,12 @@ export const RequestDetailsPage: React.FC = () => {
   // Manage Access Modal State
   const [managingDoc, setManagingDoc] = useState<DocumentItem | null>(null);
   const [isRevokingProviderId, setIsRevokingProviderId] = useState<number | null>(null);
+
+  // Performance-First Enhancement Modals State
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState<boolean>(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
+  const [isSchedulingOpen, setIsSchedulingOpen] = useState<boolean>(false);
+  const [analyzingDoc, setAnalyzingDoc] = useState<{ id: number; title: string } | null>(null);
 
   const fetchRequestDetails = async () => {
     if (!requestId || isNaN(Number(requestId))) {
@@ -315,14 +326,45 @@ export const RequestDetailsPage: React.FC = () => {
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchRequestDetails}
-            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-          >
-            Refresh Details
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {request && (
+              <>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setIsWorkspaceOpen(true)}
+                  leftIcon={<Briefcase className="w-3.5 h-3.5" />}
+                >
+                  Case Workspace
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsPrivacyOpen(true)}
+                  leftIcon={<Lock className="w-3.5 h-3.5 text-[#7C9A82]" />}
+                >
+                  Privacy Center
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsSchedulingOpen(true)}
+                  leftIcon={<Calendar className="w-3.5 h-3.5 text-[#7C9A82]" />}
+                >
+                  Scheduling
+                </Button>
+              </>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchRequestDetails}
+              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+            >
+              Refresh Details
+            </Button>
+          </div>
         </div>
 
         {errorMessage && (
@@ -908,6 +950,38 @@ export const RequestDetailsPage: React.FC = () => {
             </div>
           </Card>
         </div>
+      )}
+
+      {/* PERFORMANCE-FIRST ENHANCEMENT MODALS */}
+      {isWorkspaceOpen && request && (
+        <CaseWorkspaceModal
+          requestId={request.id}
+          onClose={() => setIsWorkspaceOpen(false)}
+          onOpenPrivacyCenter={() => { setIsWorkspaceOpen(false); setIsPrivacyOpen(true); }}
+          onOpenScheduling={() => { setIsWorkspaceOpen(false); setIsSchedulingOpen(true); }}
+        />
+      )}
+
+      {isPrivacyOpen && request && (
+        <PrivacyCenterModal
+          requestId={request.id}
+          onClose={() => setIsPrivacyOpen(false)}
+        />
+      )}
+
+      {isSchedulingOpen && request && (
+        <ServiceSchedulingModal
+          requestId={request.id}
+          onClose={() => setIsSchedulingOpen(false)}
+        />
+      )}
+
+      {analyzingDoc && (
+        <DocumentIntelligenceModal
+          documentId={analyzingDoc.id}
+          documentTitle={analyzingDoc.title}
+          onClose={() => setAnalyzingDoc(null)}
+        />
       )}
     </div>
   );

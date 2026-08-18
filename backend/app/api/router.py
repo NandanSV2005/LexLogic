@@ -7,6 +7,9 @@ from app.api.routes import (
     matching_router,
     documents_router,
     audit_router,
+    workspace_router,
+    navigator_router,
+    appointments_router,
 )
 
 api_router = APIRouter(prefix="/api")
@@ -18,3 +21,6 @@ api_router.include_router(requests_router)
 api_router.include_router(matching_router)
 api_router.include_router(documents_router)
 api_router.include_router(audit_router)
+api_router.include_router(workspace_router)
+api_router.include_router(navigator_router)
+api_router.include_router(appointments_router)

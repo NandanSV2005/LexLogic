@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import enum
 from typing import Optional, List, TYPE_CHECKING
-from sqlalchemy import String, Integer, DateTime, Enum as SQLEnum, ForeignKey, UniqueConstraint
+from sqlalchemy import String, Integer, DateTime, Enum as SQLEnum, ForeignKey, UniqueConstraint, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
@@ -41,6 +41,7 @@ class Document(Base):
     visibility: Mapped[DocumentVisibility] = mapped_column(
         SQLEnum(DocumentVisibility), default=DocumentVisibility.PRIVATE, nullable=False
     )
+    extracted_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )

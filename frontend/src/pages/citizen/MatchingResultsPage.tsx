@@ -315,24 +315,43 @@ export const MatchingResultsPage: React.FC = () => {
                       </div>
 
                       {/* WHY THIS PROVIDER MATCHES SECTION */}
-                      <div className="p-3 bg-[#DDE8DC] rounded-xl border border-[#C8D7C7] mb-4">
-                        <span className="text-[10px] font-bold text-[#29352D] uppercase tracking-wider block mb-2 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#7C9A82]" /> Why this provider matches
-                        </span>
-                        <ul className="space-y-1 text-[11px] text-[#29352D]">
-                          <li className="flex items-center gap-1.5">
+                      <div className="p-3.5 bg-[#DDE8DC] rounded-xl border border-[#C8D7C7] mb-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-[#29352D] uppercase tracking-wider flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#7C9A82]" /> Factual Match Breakdown
+                          </span>
+                          <span className="text-[10px] font-extrabold text-[#7C9A82] bg-white px-2 py-0.5 rounded-full border border-[#C8D7C7]">
+                            Score: {provider.match_score !== undefined && provider.match_score !== null ? `${provider.match_score.toFixed(0)}/100` : '100/100'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] text-[#29352D]">
+                          <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#7C9A82] shrink-0" />
-                            <span>Location: {provider.location || 'Jurisdiction compatibility'}</span>
-                          </li>
-                          <li className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#9A8FB5] shrink-0" />
-                            <span>Service: Registered {provider.provider_type}</span>
-                          </li>
-                          <li className="flex items-center gap-1.5">
+                            <span>Service Match (35%): {requestDetails?.service_category}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#7C9A82] shrink-0" />
-                            <span>Verification: {provider.verification_status} status</span>
-                          </li>
-                        </ul>
+                            <span>Location (25%): {provider.location || 'Jurisdiction compatibility'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#7C9A82] shrink-0" />
+                            <span>Verification (15%): {provider.verification_status}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#7C9A82] shrink-0" />
+                            <span>Reliability (15%): {(provider.reliability_score ?? 100).toFixed(0)}/100</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 sm:col-span-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#7C9A82] shrink-0" />
+                            <span>Experience (10%): {provider.experience_years} Years Practice</span>
+                          </div>
+                        </div>
+
+                        {/* NON-COMMERCIAL GUARANTEE BANNER */}
+                        <div className="pt-2 border-t border-[#C8D7C7] text-[10px] text-[#617066] font-medium leading-tight">
+                          🛡️ <span className="font-bold text-[#29352D]">Factual Matching Guarantee:</span> Provider matching is strictly based on service relevance and factual attributes. Payment or subscription status does not influence matching.
+                        </div>
                       </div>
 
                       {/* Generic Fields (e.g. Practice Area / Registration) */}

@@ -13,6 +13,7 @@ from app.models.request import ServiceRequest, RequestStatus, RequestProvider, I
 from app.models.document import Document, DocumentVisibility, DocumentShare, DocumentShareStatus
 from app.models.audit import AuditLog
 from app.models.points import PointTransaction, PointAction
+from app.models.appointment import Appointment, AppointmentStatus
 
 __all__ = [
     "Base",
@@ -35,4 +36,6 @@ __all__ = [
     "AuditLog",
     "PointTransaction",
     "PointAction",
+    "Appointment",
+    "AppointmentStatus",
 ]

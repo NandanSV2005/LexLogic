@@ -147,6 +147,7 @@ export interface MatchedProviderOut {
   bio?: string;
   verification_status: VerificationStatus;
   availability_status: AvailabilityStatus;
+  reliability_score?: number;
   generic_fields?: ProviderFieldValueDetail[];
   match_score?: number | null;
   is_advocate_factual_match: boolean;
@@ -273,6 +274,57 @@ export interface InterestedProvider {
   reliability_score: number;
   interaction_status: InteractionStatus;
   requested_documents?: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  event_type: string;
+  title: string;
+  description: string;
+  timestamp: string;
+}
+
+export interface NextAction {
+  action_key: string;
+  title: string;
+  description: string;
+  actor_role: string;
+}
+
+export interface WorkspaceSummary {
+  request: ServiceRequest;
+  connected_provider?: InterestedProvider;
+  next_action: NextAction;
+  timeline: TimelineEvent[];
+  documents_count: number;
+}
+
+export interface Appointment {
+  id: number;
+  request_id: number;
+  provider_id: number;
+  citizen_id: number;
+  slot_datetime: string;
+  purpose: string;
+  status: string;
+  created_at: string;
+}
+
+export interface DocumentPrivacyItem {
+  document_id: number;
+  title: string;
+  filename: string;
+  visibility: DocumentVisibility;
+  provider_id?: number;
+  provider_name?: string;
+  share_status?: DocumentShareStatus;
+  permission?: DocumentSharePermission;
+}
+
+export interface PrivacySummary {
+  request_id: number;
+  citizen_id: number;
+  items: DocumentPrivacyItem[];
 }
 
 export interface APIErrorResponse {

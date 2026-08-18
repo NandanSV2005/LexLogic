@@ -8,7 +8,14 @@ from app.api.deps import get_current_active_user
 from app.models.user import User, UserRole
 from app.models.provider import Provider
 from app.models.document import Document, DocumentVisibility, DocumentShare, DocumentShareStatus, DocumentSharePermission
-from app.schemas.document import DocumentOut, DocumentShareCreate, DocumentShareRevoke, DocumentShareOut
+from app.schemas.document import (
+    DocumentOut,
+    DocumentShareCreate,
+    DocumentShareRevoke,
+    DocumentShareOut,
+    PrivacySummaryOut,
+    DocumentPrivacyItemOut,
+)
 from app.services.document_storage import validate_and_save_upload_file
 from app.core.rate_limiter import check_upload_rate_limit
 from app.services.audit import log_audit
@@ -337,3 +344,110 @@ def revoke_document(
     )
 
     return share
+
+
+@router.get(
+    "/privacy-summary/{request_id}",
+    response_model=PrivacySummaryOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get privacy and document access summary for a request",
+    description="Returns lightweight privacy metadata showing explicit document share permissions and revocation statuses."
+)
+def get_privacy_summary(
+    request_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> PrivacySummaryOut:
+    from app.models.request import ServiceRequest
+
+    req = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
+
+    if req.citizen_id != current_user.id and current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to view privacy controls for this request")
+
+    # Fetch all documents owned by citizen
+    docs = db.query(Document).filter(Document.owner_id == req.citizen_id).all()
+
+    items: List[DocumentPrivacyItemOut] = []
+    for doc in docs:
+        if not doc.shares:
+            items.append(DocumentPrivacyItemOut(
+                document_id=doc.id,
+                title=doc.title,
+                filename=doc.filename,
+                visibility=doc.visibility,
+                provider_id=None,
+                provider_name=None,
+                share_status=None,
+                permission=None
+            ))
+        else:
+            for share in doc.shares:
+                p_name = share.provider.full_name if share.provider else f"Provider #{share.shared_with_provider_id}"
+                items.append(DocumentPrivacyItemOut(
+                    document_id=doc.id,
+                    title=doc.title,
+                    filename=doc.filename,
+                    visibility=doc.visibility,
+                    provider_id=share.shared_with_provider_id,
+                    provider_name=p_name,
+                    share_status=share.status,
+                    permission=share.permission
+                ))
+
+    return PrivacySummaryOut(
+        request_id=request_id,
+        citizen_id=req.citizen_id,
+        items=items
+    )
+
+
+@router.post(
+    "/{document_id}/analyze",
+    status_code=status.HTTP_200_OK,
+    summary="Analyze document intelligence on demand",
+    description="Explicitly extracts document type, key dates, parties, and structural headings with non-advice disclaimer."
+)
+def analyze_document(
+    document_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    from app.services.document_intelligence import extract_document_intelligence
+
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    # Authorization: Owner, Admin, or Active Share Provider
+    is_owner = (doc.owner_id == current_user.id)
+    is_admin = (current_user.role == UserRole.ADMIN)
+    is_shared_provider = False
+
+    if current_user.role == UserRole.PROVIDER:
+        provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+        if provider:
+            share = db.query(DocumentShare).filter(
+                DocumentShare.document_id == doc.id,
+                DocumentShare.shared_with_provider_id == provider.id,
+                DocumentShare.status == DocumentShareStatus.ACTIVE
+            ).first()
+            if share:
+                is_shared_provider = True
+
+    if not (is_owner or is_admin or is_shared_provider):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to analyze this document")
+
+    # If already analyzed, return cached result
+    if doc.extracted_metadata:
+        return doc.extracted_metadata
+
+    # Perform analysis
+    result = extract_document_intelligence(doc.title, doc.filename, doc.mime_type)
+    doc.extracted_metadata = result
+    db.commit()
+    db.refresh(doc)
+
+    return result

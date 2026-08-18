@@ -6,6 +6,7 @@ import {
   RequestStatus,
   InteractionStatus,
   InterestedProvider,
+  WorkspaceSummary,
 } from '../types';
 
 export interface CreateServiceRequestData {
@@ -86,6 +87,11 @@ export const requestsApi = {
 
   acceptProvider: async (requestId: number, providerId: number): Promise<ServiceRequest> => {
     const response = await apiClient.post<ServiceRequest>(`/api/requests/${requestId}/accept-provider/${providerId}`);
+    return response.data;
+  },
+
+  getCaseWorkspace: async (requestId: number): Promise<WorkspaceSummary> => {
+    const response = await apiClient.get<WorkspaceSummary>(`/api/requests/${requestId}/workspace`);
     return response.data;
   },
 };
