@@ -17,14 +17,14 @@ export const UnauthorizedPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-[#141C16] flex flex-col">
       <Navbar />
       <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 mb-6 animate-pulse">
+        <div className="p-4 bg-[#3D2020]/40 border border-[#5E3232] rounded-2xl text-[#E89D9D] mb-6 animate-pulse">
           <ShieldAlert className="w-12 h-12" />
         </div>
-        <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">403 - Access Denied</h1>
-        <p className="text-sm text-slate-400 max-w-md mt-2 mb-8 leading-relaxed">
+        <h1 className="text-3xl font-extrabold text-[#E6EFE8] tracking-tight">403 - Access Denied</h1>
+        <p className="text-sm text-[#A3B5A7] max-w-md mt-2 mb-8 leading-relaxed">
           You do not have authorization to access this resource. Your account role ({user?.role || 'Guest'}) does not match the required security permissions for this endpoint.
         </p>
 

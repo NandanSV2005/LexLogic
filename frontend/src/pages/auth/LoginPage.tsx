@@ -44,19 +44,19 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#E8F0E6] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#141C16] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center p-3 bg-[#DDE8DC] border border-[#C8D7C7] rounded-2xl text-[#7C9A82] mb-4 shadow-sm">
+        <div className="inline-flex items-center justify-center p-3 bg-[#1C261F] border border-[#2D3D32] rounded-2xl text-[#8EA895] mb-4 shadow-sm">
           <Scale className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-extrabold text-[#29352D] tracking-tight">Sign in to LexLogic</h2>
-        <p className="text-xs text-[#617066] mt-1.5">
+        <h2 className="text-2xl font-extrabold text-[#E6EFE8] tracking-tight">Sign in to LexLogic</h2>
+        <p className="text-xs text-[#A3B5A7] mt-1.5">
           Service-first legal access & transparent provider matching network
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-[#F0F4EC] border border-[#C8D7C7] rounded-2xl p-8 shadow-sm">
+        <div className="bg-[#233027] border border-[#2D3D32] rounded-2xl p-8 shadow-sm">
           {errorMessage && (
             <ErrorState
               title="Authentication Failed"
@@ -98,9 +98,9 @@ export const LoginPage: React.FC = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-[#617066]">
+          <div className="mt-6 text-center text-xs text-[#A3B5A7]">
             Don't have an account yet?{' '}
-            <Link to="/register" className="font-bold text-[#7C9A82] hover:text-[#6B8870]">
+            <Link to="/register" className="font-bold text-[#8EA895] hover:text-[#A2BCA9]">
               Register now
             </Link>
           </div>

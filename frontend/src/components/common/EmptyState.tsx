@@ -21,14 +21,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   return (
     <div
-      className={`p-8 sm:p-10 bg-[#F0F4EC] border border-[#C8D7C7] rounded-2xl flex flex-col items-center justify-center text-center max-w-lg mx-auto ${className}`}
+      className={`p-8 sm:p-10 bg-[#233027] border border-[#2D3D32] rounded-2xl flex flex-col items-center justify-center text-center max-w-lg mx-auto ${className}`}
     >
-      <div className="p-3 bg-[#DDE8DC] border border-[#C8D7C7] text-[#7C9A82] rounded-2xl mb-3">
+      <div className="p-3 bg-[#1C261F] border border-[#2D3D32] text-[#8EA895] rounded-2xl mb-3">
         {icon || <FolderOpen className="w-6 h-6" />}
       </div>
 
-      <h3 className="text-base font-bold text-[#29352D] tracking-tight">{title}</h3>
-      <p className="text-xs text-[#617066] mt-1.5 leading-relaxed max-w-sm">{description}</p>
+      <h3 className="text-base font-bold text-[#E6EFE8] tracking-tight">{title}</h3>
+      <p className="text-xs text-[#A3B5A7] mt-1.5 leading-relaxed max-w-sm">{description}</p>
 
       {actionLabel && onAction && (
         <div className="mt-4">

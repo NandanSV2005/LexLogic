@@ -51,19 +51,19 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#E8F0E6] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#141C16] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center p-3 bg-[#DDE8DC] border border-[#C8D7C7] rounded-2xl text-[#7C9A82] mb-4 shadow-sm">
+        <div className="inline-flex items-center justify-center p-3 bg-[#1C261F] border border-[#2D3D32] rounded-2xl text-[#8EA895] mb-4 shadow-sm">
           <Scale className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-extrabold text-[#29352D] tracking-tight">Create LexLogic Account</h2>
-        <p className="text-xs text-[#617066] mt-1.5">
+        <h2 className="text-2xl font-extrabold text-[#E6EFE8] tracking-tight">Create LexLogic Account</h2>
+        <p className="text-xs text-[#A3B5A7] mt-1.5">
           Join the transparent legal access & provider matching network
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-[#F0F4EC] border border-[#C8D7C7] rounded-2xl p-8 shadow-sm">
+        <div className="bg-[#233027] border border-[#2D3D32] rounded-2xl p-8 shadow-sm">
           {errorMessage && (
             <ErrorState
               title="Registration Error"
@@ -75,7 +75,7 @@ export const RegisterPage: React.FC = () => {
           <form onSubmit={handleRegister} className="space-y-5">
             {/* Role Selector */}
             <div className="flex flex-col gap-1.5 text-left">
-              <label className="text-xs font-semibold text-[#29352D] tracking-wide uppercase">
+              <label className="text-xs font-semibold text-[#A3B5A7] tracking-wide uppercase">
                 Account Type
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -84,11 +84,11 @@ export const RegisterPage: React.FC = () => {
                   onClick={() => setRole(UserRole.CITIZEN)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-semibold transition-all ${
                     role === UserRole.CITIZEN
-                      ? 'bg-[#DDE8DC] border-[#7C9A82] text-[#29352D]'
-                      : 'bg-[#FAFCF9] border-[#C8D7C7] text-[#617066] hover:border-[#7C9A82]'
+                      ? 'bg-[#1C261F] border-[#8EA895] text-[#E6EFE8]'
+                      : 'bg-[#1C261F]/40 border-[#2D3D32] text-[#A3B5A7] hover:border-[#8EA895]'
                   }`}
                 >
-                  <UserCheck className="w-5 h-5 text-[#7C9A82]" />
+                  <UserCheck className="w-5 h-5 text-[#8EA895]" />
                   <span>Citizen</span>
                 </button>
                 <button
@@ -96,11 +96,11 @@ export const RegisterPage: React.FC = () => {
                   onClick={() => setRole(UserRole.PROVIDER)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-semibold transition-all ${
                     role === UserRole.PROVIDER
-                      ? 'bg-[#E6E2F0] border-[#9A8FB5] text-[#29352D]'
-                      : 'bg-[#FAFCF9] border-[#C8D7C7] text-[#617066] hover:border-[#9A8FB5]'
+                      ? 'bg-[#2B253D] border-[#B3A7CF] text-[#E6EFE8]'
+                      : 'bg-[#1C261F]/40 border-[#2D3D32] text-[#A3B5A7] hover:border-[#B3A7CF]'
                   }`}
                 >
-                  <Briefcase className="w-5 h-5 text-[#9A8FB5]" />
+                  <Briefcase className="w-5 h-5 text-[#B3A7CF]" />
                   <span>Legal Provider</span>
                 </button>
               </div>
@@ -148,9 +148,9 @@ export const RegisterPage: React.FC = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-[#617066]">
+          <div className="mt-6 text-center text-xs text-[#A3B5A7]">
             Already registered?{' '}
-            <Link to="/login" className="font-bold text-[#7C9A82] hover:text-[#6B8870]">
+            <Link to="/login" className="font-bold text-[#8EA895] hover:text-[#A2BCA9]">
               Sign in
             </Link>
           </div>

@@ -58,7 +58,7 @@ export const AdminProviderDetailsPage: React.FC = () => {
     try {
       const updated = await providersApi.verifyProvider(provider.id, status);
       setProvider(updated);
-      setSuccessMessage(`Provider #${provider.id} status updated to ${status}.`);
+      setSuccessMessage(`Provider #${provider.id} status updated to "${status}" successfully.`);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to update verification status.');
     } finally {
@@ -81,41 +81,43 @@ export const AdminProviderDetailsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#E8F0E6] text-[#29352D] flex flex-col">
+    <div className="min-h-screen bg-[#141C16] text-[#E6EFE8] flex flex-col">
       <AdminNavbar />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link
-          to="/admin/providers"
-          className="inline-flex items-center gap-1.5 text-xs text-[#7C9A82] hover:text-[#6B8870] font-semibold mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Provider Registry
-        </Link>
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Navigation Bar */}
+        <div className="flex items-center justify-between">
+          <Link
+            to="/admin/providers"
+            className="inline-flex items-center text-xs font-semibold text-[#8EA895] hover:text-[#A2BCA9] transition-colors gap-1"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Provider Registry
+          </Link>
+        </div>
 
-        {isLoading && (
-          <div className="py-20">
-            <LoadingState message="Fetching provider details for admin verification review..." />
-          </div>
-        )}
-
-        {errorMessage && !isLoading && (
+        {errorMessage && (
           <ErrorState
-            title="Provider Inspection Error"
+            title="Profile Error"
             message={errorMessage}
             onRetry={fetchProviderDetails}
-            className="mb-6"
           />
         )}
 
         {successMessage && (
-          <div className="mb-6 p-4 bg-[#D4E5D4] border border-[#B2D4B2] text-[#1F4724] text-xs rounded-xl flex items-center justify-between font-semibold">
+          <div className="p-4 bg-[#1B3B2B] border border-[#2D5E44] text-[#7ECB98] text-xs rounded-xl flex items-center justify-between font-semibold">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#1F4724]" />
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#7ECB98]" />
               <span>{successMessage}</span>
             </div>
-            <button onClick={() => setSuccessMessage(null)} className="text-[#1F4724] hover:opacity-75">
+            <button onClick={() => setSuccessMessage(null)} className="text-[#7ECB98] hover:opacity-75">
               ✕
             </button>
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="py-20">
+            <LoadingState message="Fetching detailed provider verification profile..." />
           </div>
         )}
 
@@ -123,13 +125,13 @@ export const AdminProviderDetailsPage: React.FC = () => {
           <div className="space-y-6">
             {/* Header Identity Card */}
             <Card className="p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#C8D7C7]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#2D3D32]">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-extrabold text-[#29352D]">{provider.full_name}</h1>
+                    <h1 className="text-2xl font-extrabold text-[#E6EFE8]">{provider.full_name}</h1>
                     <Badge variant="purple">{provider.provider_type}</Badge>
                   </div>
-                  <p className="text-xs text-[#617066]">
+                  <p className="text-xs text-[#A3B5A7]">
                     Provider ID: #{provider.id} • User Account ID: #{provider.user_id}
                   </p>
                 </div>
@@ -141,7 +143,7 @@ export const AdminProviderDetailsPage: React.FC = () => {
 
               {/* Admin Action Bar */}
               <div className="flex items-center justify-between pt-2">
-                <span className="text-xs font-bold text-[#617066]">
+                <span className="text-xs font-bold text-[#A3B5A7]">
                   Verification Decision Actions:
                 </span>
 
@@ -172,84 +174,84 @@ export const AdminProviderDetailsPage: React.FC = () => {
             {/* Fact Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card className="p-4">
-                <div className="flex items-center gap-2 text-[#617066] text-xs font-bold mb-1">
-                  <MapPin className="w-4 h-4 text-[#7C9A82]" /> Location Jurisdiction
+                <div className="flex items-center gap-2 text-[#A3B5A7] text-xs font-bold mb-1">
+                  <MapPin className="w-4 h-4 text-[#8EA895]" /> Location Jurisdiction
                 </div>
-                <span className="text-sm font-bold text-[#29352D]">{provider.location || 'Not Specified'}</span>
+                <span className="text-sm font-bold text-[#E6EFE8]">{provider.location || 'Not Specified'}</span>
               </Card>
 
               <Card className="p-4">
-                <div className="flex items-center gap-2 text-[#617066] text-xs font-bold mb-1">
-                  <Clock className="w-4 h-4 text-[#9A8FB5]" /> Professional Experience
+                <div className="flex items-center gap-2 text-[#A3B5A7] text-xs font-bold mb-1">
+                  <Clock className="w-4 h-4 text-[#B3A7CF]" /> Professional Experience
                 </div>
-                <span className="text-sm font-bold text-[#29352D]">{provider.experience_years} Years</span>
+                <span className="text-sm font-bold text-[#E6EFE8]">{provider.experience_years} Years</span>
               </Card>
 
               <Card className="p-4">
-                <div className="flex items-center gap-2 text-[#617066] text-xs font-bold mb-1">
-                  <Sparkles className="w-4 h-4 text-[#7C9A82]" /> Profile Completion
+                <div className="flex items-center gap-2 text-[#A3B5A7] text-xs font-bold mb-1">
+                  <Sparkles className="w-4 h-4 text-[#8EA895]" /> Profile Completion
                 </div>
-                <span className="text-sm font-bold text-[#7C9A82]">{provider.profile_completion_percentage ?? 100}%</span>
+                <span className="text-sm font-bold text-[#8EA895]">{provider.profile_completion_percentage ?? 100}%</span>
               </Card>
             </div>
 
             {/* Professional Biography */}
             <Card className="p-6 space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-[#C8D7C7] text-[#29352D] font-bold text-xs uppercase tracking-wider">
-                <FileText className="w-4 h-4 text-[#7C9A82]" /> Professional Biography / Summary
+              <div className="flex items-center gap-2 pb-2 border-b border-[#2D3D32] text-[#E6EFE8] font-bold text-xs uppercase tracking-wider">
+                <FileText className="w-4 h-4 text-[#8EA895]" /> Professional Biography / Summary
               </div>
-              <p className="text-xs sm:text-sm text-[#29352D] leading-relaxed italic bg-[#FAFCF9] p-3.5 rounded-xl border border-[#C8D7C7]">
+              <p className="text-xs sm:text-sm text-[#E6EFE8] leading-relaxed italic bg-[#1C261F] p-3.5 rounded-xl border border-[#2D3D32]">
                 "{provider.bio || 'No professional biography provided.'}"
               </p>
             </Card>
 
             {/* Registration Details & Practice Areas */}
             <Card className="p-6 space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-[#C8D7C7] text-[#29352D] font-bold text-xs uppercase tracking-wider">
-                <Briefcase className="w-4 h-4 text-[#9A8FB5]" /> License & Practice Area Specifications
+              <div className="flex items-center gap-2 pb-2 border-b border-[#2D3D32] text-[#E6EFE8] font-bold text-xs uppercase tracking-wider">
+                <Briefcase className="w-4 h-4 text-[#B3A7CF]" /> License & Practice Area Specifications
               </div>
 
               {provider.generic_fields && provider.generic_fields.length > 0 ? (
                 <div className="space-y-3">
                   {provider.generic_fields.map((field, idx) => (
-                    <div key={idx} className="p-3.5 bg-[#FAFCF9] rounded-xl border border-[#C8D7C7] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                      <span className="font-bold text-[#617066] uppercase tracking-wide">
+                    <div key={idx} className="p-3.5 bg-[#1C261F] rounded-xl border border-[#2D3D32] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                      <span className="font-bold text-[#A3B5A7] uppercase tracking-wide">
                         {field.field_label || field.field_name}:
                       </span>
-                      <span className="font-bold text-[#29352D]">{field.value}</span>
+                      <span className="font-bold text-[#E6EFE8]">{field.value}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-[#617066]">No generic registration fields updated.</p>
+                <p className="text-xs text-[#A3B5A7]">No generic registration fields updated.</p>
               )}
             </Card>
 
             {/* Reliability & Engagement Metrics */}
             <Card className="p-6 space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-[#C8D7C7] text-[#29352D] font-bold text-xs uppercase tracking-wider">
-                <TrendingUp className="w-4 h-4 text-[#7C9A82]" /> Reliability & Service Metrics
+              <div className="flex items-center gap-2 pb-2 border-b border-[#2D3D32] text-[#E6EFE8] font-bold text-xs uppercase tracking-wider">
+                <TrendingUp className="w-4 h-4 text-[#8EA895]" /> Reliability & Service Metrics
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-                <div className="p-3 bg-[#FAFCF9] rounded-xl border border-[#C8D7C7]">
-                  <span className="text-[#617066] block text-[10px] font-bold">Reliability Score</span>
-                  <span className="text-base font-bold text-[#7C9A82]">{provider.reliability_score?.toFixed(1) || 'N/A'} / 100</span>
+                <div className="p-3 bg-[#1C261F] rounded-xl border border-[#2D3D32]">
+                  <span className="text-[#A3B5A7] block text-[10px] font-bold">Reliability Score</span>
+                  <span className="text-base font-bold text-[#8EA895]">{provider.reliability_score?.toFixed(1) || 'N/A'} / 100</span>
                 </div>
 
-                <div className="p-3 bg-[#FAFCF9] rounded-xl border border-[#C8D7C7]">
-                  <span className="text-[#617066] block text-[10px] font-bold">Response Rate</span>
-                  <span className="text-base font-bold text-[#1F4724]">{provider.response_rate?.toFixed(1) || 0}%</span>
+                <div className="p-3 bg-[#1C261F] rounded-xl border border-[#2D3D32]">
+                  <span className="text-[#A3B5A7] block text-[10px] font-bold">Response Rate</span>
+                  <span className="text-base font-bold text-[#7ECB98]">{provider.response_rate?.toFixed(1) || 0}%</span>
                 </div>
 
-                <div className="p-3 bg-[#FAFCF9] rounded-xl border border-[#C8D7C7]">
-                  <span className="text-[#617066] block text-[10px] font-bold">Completed Requests</span>
-                  <span className="text-base font-bold text-[#29352D]">{provider.completed_requests || 0}</span>
+                <div className="p-3 bg-[#1C261F] rounded-xl border border-[#2D3D32]">
+                  <span className="text-[#A3B5A7] block text-[10px] font-bold">Completed Requests</span>
+                  <span className="text-base font-bold text-[#E6EFE8]">{provider.completed_requests || 0}</span>
                 </div>
 
-                <div className="p-3 bg-[#FAFCF9] rounded-xl border border-[#C8D7C7]">
-                  <span className="text-[#617066] block text-[10px] font-bold">Incentive Points</span>
-                  <span className="text-base font-bold text-[#D6A89A]">{provider.points || 0} pts</span>
+                <div className="p-3 bg-[#1C261F] rounded-xl border border-[#2D3D32]">
+                  <span className="text-[#A3B5A7] block text-[10px] font-bold">Incentive Points</span>
+                  <span className="text-base font-bold text-[#E89D9D]">{provider.points || 0} pts</span>
                 </div>
               </div>
             </Card>

@@ -58,7 +58,7 @@ export const AdminDashboardPage: React.FC = () => {
     try {
       await providersApi.verifyProvider(providerId, status);
       setSuccessMessage(
-        `Provider #${providerId} status updated to ${status} successfully.`
+        `Provider #${providerId} verification updated to "${status}"!`
       );
       await fetchDashboardData();
     } catch (err: any) {
@@ -68,29 +68,32 @@ export const AdminDashboardPage: React.FC = () => {
     }
   };
 
-  // Backend Metric Calculations
-  const totalProviders = providers.length;
-  const verifiedProviders = providers.filter((p) => p.verification_status === VerificationStatus.VERIFIED).length;
   const pendingProviders = providers.filter(
-    (p) => p.verification_status === VerificationStatus.SUBMITTED || p.verification_status === VerificationStatus.PENDING
+    (p) => p.verification_status === VerificationStatus.PENDING || p.verification_status === VerificationStatus.SUBMITTED
   );
 
+  const verifiedProviders = providers.filter(
+    (p) => p.verification_status === VerificationStatus.VERIFIED
+  ).length;
+
+  const totalProviders = providers.length;
+
   return (
-    <div className="min-h-screen bg-[#E8F0E6] text-[#29352D] flex flex-col">
+    <div className="min-h-screen bg-[#141C16] text-[#E6EFE8] flex flex-col">
       <AdminNavbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#29352D] tracking-tight">
-                Platform Overview
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E6EFE8] tracking-tight">
+                Admin Platform Dashboard
               </h1>
-              <Badge variant="purple">LexLogic MVP Admin</Badge>
+              <Badge variant="purple">Admin System Control</Badge>
             </div>
-            <p className="text-xs sm:text-sm text-[#617066] mt-1">
-              Real-time platform statistics, provider verification decision queue, and security audit log stream.
+            <p className="text-xs sm:text-sm text-[#A3B5A7] mt-1">
+              Verification governance, audit log monitoring, and platform reliability controls.
             </p>
           </div>
 
@@ -100,7 +103,7 @@ export const AdminDashboardPage: React.FC = () => {
             onClick={fetchDashboardData}
             leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
           >
-            Refresh Dashboard Data
+            Refresh Dashboard
           </Button>
         </div>
 
@@ -113,12 +116,12 @@ export const AdminDashboardPage: React.FC = () => {
         )}
 
         {successMessage && (
-          <div className="p-4 bg-[#D4E5D4] border border-[#B2D4B2] text-[#1F4724] text-xs rounded-xl flex items-center justify-between font-semibold">
+          <div className="p-4 bg-[#1B3B2B] border border-[#2D5E44] text-[#7ECB98] text-xs rounded-xl flex items-center justify-between font-semibold">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#1F4724]" />
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-[#7ECB98]" />
               <span>{successMessage}</span>
             </div>
-            <button onClick={() => setSuccessMessage(null)} className="text-[#1F4724] hover:opacity-75">
+            <button onClick={() => setSuccessMessage(null)} className="text-[#7ECB98] hover:opacity-75">
               ✕
             </button>
           </div>
@@ -136,90 +139,90 @@ export const AdminDashboardPage: React.FC = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="p-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#617066] uppercase tracking-wider">
+                  <span className="text-xs font-bold text-[#A3B5A7] uppercase tracking-wider">
                     Total Providers
                   </span>
-                  <div className="p-2 bg-[#DDE8DC] text-[#7C9A82] border border-[#C8D7C7] rounded-lg">
+                  <div className="p-2 bg-[#1C261F] text-[#8EA895] border border-[#2D3D32] rounded-lg">
                     <Users className="w-4 h-4" />
                   </div>
                 </div>
-                <span className="text-2xl font-extrabold text-[#29352D] mt-2 block">
+                <span className="text-2xl font-extrabold text-[#E6EFE8] mt-2 block">
                   {totalProviders}
                 </span>
-                <span className="text-[11px] text-[#617066] mt-1 block">Registered profiles</span>
+                <span className="text-[11px] text-[#A3B5A7] mt-1 block">Registered profiles</span>
               </Card>
 
               <Card className="p-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#617066] uppercase tracking-wider">
+                  <span className="text-xs font-bold text-[#A3B5A7] uppercase tracking-wider">
                     Verified Providers
                   </span>
-                  <div className="p-2 bg-[#DDE8DC] text-[#7C9A82] border border-[#C8D7C7] rounded-lg">
+                  <div className="p-2 bg-[#1C261F] text-[#8EA895] border border-[#2D3D32] rounded-lg">
                     <ShieldCheck className="w-4 h-4" />
                   </div>
                 </div>
-                <span className="text-2xl font-extrabold text-[#1F4724] mt-2 block">
+                <span className="text-2xl font-extrabold text-[#7ECB98] mt-2 block">
                   {verifiedProviders}
                 </span>
-                <span className="text-[11px] text-[#1F4724] mt-1 block font-semibold">
+                <span className="text-[11px] text-[#7ECB98] mt-1 block font-semibold">
                   {((verifiedProviders / (totalProviders || 1)) * 100).toFixed(0)}% verified status rate
                 </span>
               </Card>
 
               <Card className="p-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#617066] uppercase tracking-wider">
+                  <span className="text-xs font-bold text-[#A3B5A7] uppercase tracking-wider">
                     Pending Verification
                   </span>
-                  <div className="p-2 bg-[#DDE8DC] text-[#D6A89A] border border-[#C8D7C7] rounded-lg">
+                  <div className="p-2 bg-[#1C261F] text-[#E89D9D] border border-[#2D3D32] rounded-lg">
                     <ShieldAlert className="w-4 h-4" />
                   </div>
                 </div>
-                <span className="text-2xl font-extrabold text-[#5C4114] mt-2 block">
+                <span className="text-2xl font-extrabold text-[#E3BA7E] mt-2 block">
                   {pendingProviders.length}
                 </span>
-                <span className="text-[11px] text-[#5C4114] mt-1 block font-semibold">
+                <span className="text-[11px] text-[#E3BA7E] mt-1 block font-semibold">
                   {pendingProviders.length > 0 ? 'Requires admin action' : 'Queue up to date'}
                 </span>
               </Card>
 
               <Card className="p-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#617066] uppercase tracking-wider">
+                  <span className="text-xs font-bold text-[#A3B5A7] uppercase tracking-wider">
                     Security Audit Logs
                   </span>
-                  <div className="p-2 bg-[#DDE8DC] text-[#9A8FB5] border border-[#C8D7C7] rounded-lg">
+                  <div className="p-2 bg-[#1C261F] text-[#B3A7CF] border border-[#2D3D32] rounded-lg">
                     <Activity className="w-4 h-4" />
                   </div>
                 </div>
-                <span className="text-2xl font-extrabold text-[#29352D] mt-2 block">
+                <span className="text-2xl font-extrabold text-[#E6EFE8] mt-2 block">
                   {auditLogs.length}
                 </span>
-                <span className="text-[11px] text-[#617066] mt-1 block">Recorded security events</span>
+                <span className="text-[11px] text-[#A3B5A7] mt-1 block">Recorded security events</span>
               </Card>
             </div>
 
             {/* PENDING VERIFICATION QUEUE SECTION */}
             <Card className="p-6 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[#C8D7C7]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#2D3D32]">
                 <div className="flex items-center gap-2">
-                  <ShieldAlert className="w-5 h-5 text-[#D6A89A]" />
-                  <h2 className="text-base font-bold text-[#29352D]">
+                  <ShieldAlert className="w-5 h-5 text-[#E89D9D]" />
+                  <h2 className="text-base font-bold text-[#E6EFE8]">
                     Provider Verification Action Queue ({pendingProviders.length})
                   </h2>
                 </div>
 
                 <Link
                   to="/admin/providers"
-                  className="text-xs text-[#7C9A82] hover:text-[#6B8870] font-bold flex items-center gap-1"
+                  className="text-xs text-[#8EA895] hover:text-[#A2BCA9] font-bold flex items-center gap-1"
                 >
                   Manage All Providers <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
 
               {pendingProviders.length === 0 ? (
-                <div className="p-8 bg-[#FAFCF9] border border-[#C8D7C7] rounded-2xl text-center">
-                  <p className="text-xs text-[#617066]">
+                <div className="p-8 bg-[#1C261F] border border-[#2D3D32] rounded-2xl text-center">
+                  <p className="text-xs text-[#A3B5A7]">
                     No pending provider verification requests in queue. All profiles reviewed.
                   </p>
                 </div>
@@ -228,16 +231,16 @@ export const AdminDashboardPage: React.FC = () => {
                   {pendingProviders.map((provider) => (
                     <div
                       key={provider.id}
-                      className="p-4 bg-[#FAFCF9] rounded-xl border border-[#C8D7C7] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      className="p-4 bg-[#1C261F] rounded-xl border border-[#2D3D32] flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                     >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-[#29352D]">{provider.full_name}</span>
+                          <span className="text-sm font-bold text-[#E6EFE8]">{provider.full_name}</span>
                           <Badge variant="purple">{provider.provider_type}</Badge>
                           <Badge variant="warning">{provider.verification_status}</Badge>
                         </div>
-                        <p className="text-xs text-[#617066]">
-                          Location: <span className="text-[#29352D] font-semibold">{provider.location || 'N/A'}</span> • Experience: <span className="text-[#29352D] font-semibold">{provider.experience_years} Years</span> • Completion: <span className="text-[#7C9A82] font-bold">{provider.profile_completion_percentage ?? 100}%</span>
+                        <p className="text-xs text-[#A3B5A7]">
+                          Location: <span className="text-[#E6EFE8] font-semibold">{provider.location || 'N/A'}</span> • Experience: <span className="text-[#E6EFE8] font-semibold">{provider.experience_years} Years</span> • Completion: <span className="text-[#8EA895] font-bold">{provider.profile_completion_percentage ?? 100}%</span>
                         </p>
                       </div>
 
@@ -276,17 +279,17 @@ export const AdminDashboardPage: React.FC = () => {
 
             {/* SECURITY AUDIT LOG STREAM */}
             <Card className="p-6 space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[#C8D7C7]">
+              <div className="flex items-center justify-between pb-3 border-b border-[#2D3D32]">
                 <div className="flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-[#9A8FB5]" />
-                  <h2 className="text-base font-bold text-[#29352D]">
+                  <Activity className="w-5 h-5 text-[#B3A7CF]" />
+                  <h2 className="text-base font-bold text-[#E6EFE8]">
                     Recent Security Audit Log Stream
                   </h2>
                 </div>
 
                 <Link
                   to="/admin/audit"
-                  className="text-xs text-[#7C9A82] hover:text-[#6B8870] font-bold flex items-center gap-1"
+                  className="text-xs text-[#8EA895] hover:text-[#A2BCA9] font-bold flex items-center gap-1"
                 >
                   View Full Audit Log <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
@@ -296,16 +299,16 @@ export const AdminDashboardPage: React.FC = () => {
                 {auditLogs.slice(0, 6).map((log) => (
                   <div
                     key={log.id}
-                    className="p-3 bg-[#FAFCF9] rounded-xl border border-[#C8D7C7] flex items-center justify-between text-xs"
+                    className="p-3 bg-[#1C261F] rounded-xl border border-[#2D3D32] flex items-center justify-between text-xs"
                   >
                     <div className="flex items-center gap-3">
                       <Badge variant="purple">{log.action}</Badge>
-                      <span className="text-[#29352D]">
+                      <span className="text-[#E6EFE8]">
                         User #{log.user_id || 'System'} • Resource: {log.resource_type || 'N/A'} #{log.resource_id || ''}
                       </span>
                     </div>
 
-                    <span className="text-[11px] text-[#617066] font-mono">
+                    <span className="text-[11px] text-[#A3B5A7] font-mono">
                       {new Date(log.created_at || log.timestamp || '').toLocaleString()}
                     </span>
                   </div>

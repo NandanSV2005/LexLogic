@@ -40,17 +40,17 @@ export const Modal: React.FC<ModalProps> = ({
   }[maxWidth];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#29352D]/50 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
       <div
-        className={`w-full ${maxWidthClass} bg-[#F0F4EC] border border-[#C8D7C7] rounded-2xl shadow-xl overflow-hidden flex flex-col transform transition-all`}
+        className={`w-full ${maxWidthClass} bg-[#233027] border border-[#2D3D32] rounded-2xl shadow-xl overflow-hidden flex flex-col transform transition-all`}
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#C8D7C7]">
-          <h3 className="text-base font-bold text-[#29352D]">{title}</h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2D3D32]">
+          <h3 className="text-base font-bold text-[#E6EFE8]">{title}</h3>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-[#617066] hover:text-[#29352D] hover:bg-[#DDE8DC] transition-colors"
+            className="p-1 rounded-lg text-[#A3B5A7] hover:text-[#E6EFE8] hover:bg-[#1C261F] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

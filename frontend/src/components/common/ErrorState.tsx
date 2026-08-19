@@ -17,13 +17,13 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
 }) => {
   return (
     <div
-      className={`bg-[#F4D6D6]/40 border border-[#E8B4B4] rounded-xl p-5 flex flex-col items-center text-center max-w-lg mx-auto ${className}`}
+      className={`bg-[#3D2020]/40 border border-[#5E3232] rounded-xl p-5 flex flex-col items-center text-center max-w-lg mx-auto ${className}`}
     >
-      <div className="p-2.5 bg-[#F4D6D6] rounded-full text-[#5C1D1D] mb-2.5">
+      <div className="p-2.5 bg-[#3D2020] rounded-full text-[#E89D9D] mb-2.5">
         <AlertTriangle className="w-5 h-5" />
       </div>
-      <h4 className="text-sm font-bold text-[#5C1D1D]">{title}</h4>
-      <p className="text-xs text-[#5C1D1D]/90 mt-1 mb-3.5 leading-relaxed">{message}</p>
+      <h4 className="text-sm font-bold text-[#E89D9D]">{title}</h4>
+      <p className="text-xs text-[#E89D9D]/90 mt-1 mb-3.5 leading-relaxed">{message}</p>
       {onRetry && (
         <Button
           variant="outline"

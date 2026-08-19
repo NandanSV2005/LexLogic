@@ -71,7 +71,7 @@ export const CitizenDashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#E8F0E6] text-[#29352D] flex flex-col">
+    <div className="min-h-screen bg-[#141C16] text-[#E6EFE8] flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -79,34 +79,34 @@ export const CitizenDashboardPage: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#29352D] tracking-tight">Citizen Portal</h1>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E6EFE8] tracking-tight">Citizen Portal</h1>
               <Badge variant="success">Citizen Role</Badge>
             </div>
-            <p className="text-xs sm:text-sm text-[#617066] mt-1">
+            <p className="text-xs sm:text-sm text-[#A3B5A7] mt-1">
               Service-first legal assistance, transparent provider matching & private document vault
             </p>
           </div>
 
-          <div className="text-xs text-[#617066] bg-[#F0F4EC] border border-[#C8D7C7] rounded-xl px-4 py-2.5 flex items-center gap-2 shadow-sm w-fit">
-            <span className="w-2 h-2 rounded-full bg-[#7C9A82] shrink-0" />
+          <div className="text-xs text-[#A3B5A7] bg-[#1C261F] border border-[#2D3D32] rounded-xl px-4 py-2.5 flex items-center gap-2 shadow-sm w-fit">
+            <span className="w-2 h-2 rounded-full bg-[#8EA895] shrink-0" />
             <span>Logged in as</span>
-            <span className="font-semibold text-[#29352D]">{user?.email}</span>
+            <span className="font-semibold text-[#E6EFE8]">{user?.email}</span>
           </div>
         </div>
 
         {/* PROMINENT PRIMARY HERO CTA */}
-        <div className="mb-10 p-6 sm:p-8 bg-[#DDE8DC] border border-[#C8D7C7] rounded-3xl shadow-sm relative overflow-hidden">
+        <div className="mb-10 p-6 sm:p-8 bg-[#1C261F] border border-[#2D3D32] rounded-3xl shadow-sm relative overflow-hidden">
           <div className="max-w-2xl relative z-10 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#F0F4EC] border border-[#C8D7C7] text-[#29352D] text-xs font-semibold rounded-full">
-              <Sparkles className="w-3.5 h-3.5 text-[#7C9A82]" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#233027] border border-[#2D3D32] text-[#E6EFE8] text-xs font-semibold rounded-full">
+              <Sparkles className="w-3.5 h-3.5 text-[#8EA895]" />
               <span>Service-First Matching Engine</span>
             </div>
 
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#29352D] tracking-tight">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#E6EFE8] tracking-tight">
               Have a legal issue? Describe what you need in plain words.
             </h2>
 
-            <p className="text-xs sm:text-sm text-[#617066] leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#A3B5A7] leading-relaxed">
               You do not need to know whether you require an Advocate, Mediator, Arbitrator, Notary, or Document Writer. LexLogic's backend multi-attribute matching engine will analyze your requirement and match you with verified providers.
             </p>
 
@@ -131,19 +131,19 @@ export const CitizenDashboardPage: React.FC = () => {
           {/* Card 1: Describe Legal Need */}
           <Card className="p-6 flex flex-col justify-between">
             <div>
-              <div className="p-3 bg-[#DDE8DC] text-[#7C9A82] border border-[#C8D7C7] rounded-xl w-fit mb-4">
+              <div className="p-3 bg-[#1C261F] text-[#8EA895] border border-[#2D3D32] rounded-xl w-fit mb-4">
                 <Search className="w-6 h-6" />
               </div>
-              <CardTitle className="text-base font-bold text-[#29352D]">Find Legal Assistance</CardTitle>
-              <CardDescription className="text-xs text-[#617066] mt-1">
+              <CardTitle className="text-base font-bold text-[#E6EFE8]">Find Legal Assistance</CardTitle>
+              <CardDescription className="text-xs text-[#A3B5A7] mt-1">
                 Describe your issue and let LexLogic find relevant service providers.
               </CardDescription>
-              <p className="text-xs text-[#617066] leading-relaxed mt-3">
+              <p className="text-xs text-[#A3B5A7] leading-relaxed mt-3">
                 Service-first matching with qualified legal advocates, mediators, arbitrators, notaries, and document writers.
               </p>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[#C8D7C7]">
+            <div className="mt-6 pt-4 border-t border-[#2D3D32]">
               <Link to="/citizen/request/new">
                 <Button variant="secondary" size="sm" className="w-full" rightIcon={<ArrowRight className="w-4 h-4" />}>
                   Start a New Matching Request
@@ -155,23 +155,23 @@ export const CitizenDashboardPage: React.FC = () => {
           {/* Card 2: Private Document Vault */}
           <Card className="p-6 flex flex-col justify-between">
             <div>
-              <div className="p-3 bg-[#DDE8DC] text-[#7C9A82] border border-[#C8D7C7] rounded-xl w-fit mb-4">
+              <div className="p-3 bg-[#1C261F] text-[#8EA895] border border-[#2D3D32] rounded-xl w-fit mb-4">
                 <FolderLock className="w-6 h-6" />
               </div>
-              <CardTitle className="text-base font-bold text-[#29352D]">Private Document Vault</CardTitle>
-              <CardDescription className="text-xs text-[#617066] mt-1">
+              <CardTitle className="text-base font-bold text-[#E6EFE8]">Private Document Vault</CardTitle>
+              <CardDescription className="text-xs text-[#A3B5A7] mt-1">
                 Secure file storage & explicit access sharing
               </CardDescription>
-              <p className="text-xs text-[#617066] leading-relaxed mt-3">
+              <p className="text-xs text-[#A3B5A7] leading-relaxed mt-3">
                 Upload confidential deeds and contracts. Explicitly grant or revoke access to providers on demand.
               </p>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[#C8D7C7] flex items-center justify-between">
-              <span className="text-xs text-[#617066] font-medium">
+            <div className="mt-6 pt-4 border-t border-[#2D3D32] flex items-center justify-between">
+              <span className="text-xs text-[#A3B5A7] font-medium">
                 {documents.length} File{documents.length === 1 ? '' : 's'} Stored
               </span>
-              <span className="text-xs text-[#7C9A82] font-semibold flex items-center gap-1">
+              <span className="text-xs text-[#8EA895] font-semibold flex items-center gap-1">
                 <ShieldCheck className="w-4 h-4" /> Encrypted Storage
               </span>
             </div>
@@ -180,23 +180,23 @@ export const CitizenDashboardPage: React.FC = () => {
           {/* Card 3: Service Requests */}
           <Card className="p-6 flex flex-col justify-between">
             <div>
-              <div className="p-3 bg-[#DDE8DC] text-[#9A8FB5] border border-[#C8D7C7] rounded-xl w-fit mb-4">
+              <div className="p-3 bg-[#1C261F] text-[#B3A7CF] border border-[#2D3D32] rounded-xl w-fit mb-4">
                 <UserCheck className="w-6 h-6" />
               </div>
-              <CardTitle className="text-base font-bold text-[#29352D]">Service Requests</CardTitle>
-              <CardDescription className="text-xs text-[#617066] mt-1">
+              <CardTitle className="text-base font-bold text-[#E6EFE8]">Service Requests</CardTitle>
+              <CardDescription className="text-xs text-[#A3B5A7] mt-1">
                 Track active inquiries & provider responses
               </CardDescription>
-              <p className="text-xs text-[#617066] leading-relaxed mt-3">
+              <p className="text-xs text-[#A3B5A7] leading-relaxed mt-3">
                 Monitor status progression from Open to Matched, In Progress, and Completed.
               </p>
             </div>
 
-            <div className="mt-6 pt-4 border-t border-[#C8D7C7] flex items-center justify-between">
-              <span className="text-xs text-[#617066] font-medium">
+            <div className="mt-6 pt-4 border-t border-[#2D3D32] flex items-center justify-between">
+              <span className="text-xs text-[#A3B5A7] font-medium">
                 {requests.length} Total Request{requests.length === 1 ? '' : 's'}
               </span>
-              <span className="text-xs text-[#7C9A82] font-bold">
+              <span className="text-xs text-[#8EA895] font-bold">
                 {requests.filter((r) => r.status === RequestStatus.OPEN || r.status === RequestStatus.MATCHED).length} Active
               </span>
             </div>
@@ -207,8 +207,8 @@ export const CitizenDashboardPage: React.FC = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-[#29352D] tracking-tight">Your Service Requests</h2>
-              <p className="text-xs text-[#617066]">View matches or monitor progress for your submitted requests.</p>
+              <h2 className="text-lg font-bold text-[#E6EFE8] tracking-tight">Your Service Requests</h2>
+              <p className="text-xs text-[#A3B5A7]">View matches or monitor progress for your submitted requests.</p>
             </div>
 
             <Link to="/citizen/request/new">
@@ -246,26 +246,26 @@ export const CitizenDashboardPage: React.FC = () => {
               {requests.map((req) => (
                 <div
                   key={req.id}
-                  className="p-5 bg-[#F0F4EC] border border-[#C8D7C7] rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[#7C9A82] transition-all shadow-sm"
+                  className="p-5 bg-[#233027] border border-[#2D3D32] rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-[#8EA895] transition-all shadow-sm"
                 >
                   <div className="space-y-1.5 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-bold text-[#7C9A82]">Request #{req.id}</span>
-                      <span className="text-[#617066]">•</span>
-                      <span className="text-xs font-semibold text-[#29352D]">{req.service_category}</span>
+                      <span className="text-xs font-bold text-[#8EA895]">Request #{req.id}</span>
+                      <span className="text-[#A3B5A7]">•</span>
+                      <span className="text-xs font-semibold text-[#E6EFE8]">{req.service_category}</span>
                       {renderStatusBadge(req.status)}
                     </div>
 
-                    <p className="text-xs text-[#29352D] line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-[#E6EFE8] line-clamp-2 leading-relaxed">
                       {req.description}
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-4 text-[11px] text-[#617066] pt-1">
+                    <div className="flex flex-wrap items-center gap-4 text-[11px] text-[#A3B5A7] pt-1">
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-[#7C9A82] shrink-0" /> {req.location}
+                        <MapPin className="w-3.5 h-3.5 text-[#8EA895] shrink-0" /> {req.location}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-[#9A8FB5] shrink-0" /> {req.urgency} Urgency
+                        <Clock className="w-3.5 h-3.5 text-[#B3A7CF] shrink-0" /> {req.urgency} Urgency
                       </span>
                       <span>
                         Created: {new Date(req.created_at).toLocaleDateString()}

@@ -60,59 +60,54 @@ export const ProviderOnboardingPage: React.FC = () => {
             setField1(f1);
             setField2(f2);
           }
-
-          if (profile.is_profile_complete) {
-            navigate('/provider/dashboard', { replace: true });
-          }
         }
-      } catch (err: any) {
-        // Profile does not exist yet; user will create via form
+      } catch (err) {
+        // Profile does not exist yet (normal for first-time onboarding)
       } finally {
         setIsLoading(false);
       }
     };
 
     checkExistingProfile();
-  }, [navigate]);
+  }, []);
 
-  // Labels for profession-specific required fields
   const getFieldLabels = (type: ProviderType) => {
     switch (type) {
       case ProviderType.ADVOCATE:
         return {
-          f1Name: 'practice_area',
-          f1Label: 'Practice Area(s)',
-          f1Placeholder: 'e.g. Constitutional & Commercial Property Disputes',
-          f2Name: 'registration_details',
-          f2Label: 'Bar Council / Registration Details',
-          f2Placeholder: 'e.g. Bar Council Reg No. D/9876/2009',
+          f1Name: 'bar_registration',
+          f1Label: 'Bar Council Registration Number',
+          f1Placeholder: 'e.g. Bar Council Reg No. D/9876/2009',
+          f2Name: 'practice_area',
+          f2Label: 'Primary Practice Area(s)',
+          f2Placeholder: 'e.g. Constitutional, Civil, Commercial Litigation',
         };
       case ProviderType.ARBITRATOR:
         return {
-          f1Name: 'specialization',
-          f1Label: 'Arbitration Specialization',
-          f1Placeholder: 'e.g. Commercial & Infrastructure Arbitration',
-          f2Name: 'availability_schedule',
-          f2Label: 'Availability / Panel Details',
-          f2Placeholder: 'e.g. High Court Empaneled Arbitrator',
+          f1Name: 'empanelment_details',
+          f1Label: 'Empanelment / Arbitration Body Certification',
+          f1Placeholder: 'e.g. Indian Council of Arbitration (ICA) Reg #4412',
+          f2Name: 'specialization',
+          f2Label: 'Arbitration Specialization Domain',
+          f2Placeholder: 'e.g. Construction & Commercial Contract Tribunal',
         };
       case ProviderType.MEDIATOR:
         return {
-          f1Name: 'specialization',
-          f1Label: 'Mediation Specialization',
-          f1Placeholder: 'e.g. Corporate Shareholder & Family Business Mediation',
-          f2Name: 'availability_schedule',
-          f2Label: 'Availability Schedule',
-          f2Placeholder: 'e.g. Weekday Afternoons & Saturdays',
+          f1Name: 'mediation_accreditation',
+          f1Label: 'Mediation Training Accreditation / Certification',
+          f1Placeholder: 'e.g. High Court Certified Mediator (40-Hour Training)',
+          f2Name: 'panel_membership',
+          f2Label: 'Mediation Panel Membership',
+          f2Placeholder: 'e.g. District Legal Services Authority Panel',
         };
       case ProviderType.NOTARY:
         return {
-          f1Name: 'registration_details',
-          f1Label: 'Notary License / Registration Details',
-          f1Placeholder: 'e.g. NOT/DEL/5544/2014',
-          f2Name: 'service_type',
-          f2Label: 'Notary Services Offered',
-          f2Placeholder: 'e.g. Affidavit Attestation & Agreement Notarization',
+          f1Name: 'notary_license',
+          f1Label: 'Government Notary Appointment License Number',
+          f1Placeholder: 'e.g. Central Govt Notary Reg #8821/2015',
+          f2Name: 'jurisdiction_area',
+          f2Label: 'Authorized Notarial Jurisdiction',
+          f2Placeholder: 'e.g. District Court Premises & Municipal Limits',
         };
       case ProviderType.DOCUMENT_WRITER:
         return {
@@ -210,7 +205,7 @@ export const ProviderOnboardingPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#E8F0E6] flex flex-col">
+      <div className="min-h-screen bg-[#141C16] flex flex-col text-[#E6EFE8]">
         <Navbar />
         <div className="flex-1 flex items-center justify-center py-16">
           <LoadingState message="Checking provider onboarding status..." />
@@ -220,19 +215,19 @@ export const ProviderOnboardingPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#E8F0E6] text-[#29352D] flex flex-col">
+    <div className="min-h-screen bg-[#141C16] text-[#E6EFE8] flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* HEADER */}
         <div className="mb-8 text-center sm:text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#DDE8DC] border border-[#C8D7C7] text-[#7C9A82] text-xs font-semibold mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1C261F] border border-[#2D3D32] text-[#8EA895] text-xs font-semibold mb-3">
             <Sparkles className="w-3.5 h-3.5" /> Provider Professional Onboarding
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#29352D] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#E6EFE8] tracking-tight">
             Complete Your Provider Profile
           </h1>
-          <p className="text-xs sm:text-sm text-[#617066] mt-1.5 leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#A3B5A7] mt-1.5 leading-relaxed">
             Before accessing citizen legal service requests, complete your professional profile.
           </p>
         </div>
@@ -240,17 +235,17 @@ export const ProviderOnboardingPage: React.FC = () => {
         {/* PROGRESS BAR BANNER */}
         <Card className="mb-8 p-5">
           <div className="flex items-center justify-between gap-4 mb-3">
-            <span className="text-xs font-bold text-[#617066] uppercase tracking-wide">
+            <span className="text-xs font-bold text-[#A3B5A7] uppercase tracking-wide">
               Profile Completion Status
             </span>
-            <span className="text-xs font-bold text-[#7C9A82] bg-[#DDE8DC] border border-[#C8D7C7] px-3 py-1 rounded-xl">
+            <span className="text-xs font-bold text-[#8EA895] bg-[#1C261F] border border-[#2D3D32] px-3 py-1 rounded-xl">
               {completionPct}% Complete
             </span>
           </div>
 
-          <div className="w-full h-2.5 bg-[#DDE8DC] rounded-full overflow-hidden">
+          <div className="w-full h-2.5 bg-[#1C261F] rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#7C9A82] transition-all duration-300"
+              className="h-full bg-[#8EA895] transition-all duration-300"
               style={{ width: `${completionPct}%` }}
             />
           </div>
@@ -258,13 +253,13 @@ export const ProviderOnboardingPage: React.FC = () => {
 
         {isSubmitted ? (
           <Card className="p-8 text-center space-y-6">
-            <div className="w-16 h-16 bg-[#D4E5D4] border border-[#B2D4B2] text-[#1F4724] rounded-full flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 bg-[#1B3B2B] border border-[#2D5E44] text-[#7ECB98] rounded-full flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div>
-              <h2 className="text-xl font-extrabold text-[#29352D]">Profile Submitted Successfully!</h2>
-              <p className="text-xs sm:text-sm text-[#617066] mt-2 max-w-md mx-auto leading-relaxed">
+              <h2 className="text-xl font-extrabold text-[#E6EFE8]">Profile Submitted Successfully!</h2>
+              <p className="text-xs sm:text-sm text-[#A3B5A7] mt-2 max-w-md mx-auto leading-relaxed">
                 Your professional profile has been updated and registered. You now have full access to citizen service opportunities.
               </p>
             </div>
@@ -289,13 +284,13 @@ export const ProviderOnboardingPage: React.FC = () => {
 
             {/* PROFESSION SELECTION */}
             <Card className="p-6 space-y-4">
-              <div className="flex items-center gap-3 pb-3 border-b border-[#C8D7C7]">
-                <div className="p-2 bg-[#DDE8DC] text-[#7C9A82] border border-[#C8D7C7] rounded-lg">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#2D3D32]">
+                <div className="p-2 bg-[#1C261F] text-[#8EA895] border border-[#2D3D32] rounded-lg">
                   <Briefcase className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-[#29352D]">Select Profession</h2>
-                  <p className="text-xs text-[#617066]">Specify your primary professional legal designation.</p>
+                  <h2 className="text-base font-bold text-[#E6EFE8]">Select Profession</h2>
+                  <p className="text-xs text-[#A3B5A7]">Specify your primary professional legal designation.</p>
                 </div>
               </div>
 
@@ -313,8 +308,8 @@ export const ProviderOnboardingPage: React.FC = () => {
                     onClick={() => setProviderType(item.type)}
                     className={`p-3.5 rounded-xl border text-xs font-bold text-center transition-all ${
                       providerType === item.type
-                        ? 'bg-[#DDE8DC] border-[#7C9A82] text-[#29352D] shadow-sm'
-                        : 'bg-[#FAFCF9] border-[#C8D7C7] text-[#617066] hover:border-[#7C9A82]'
+                        ? 'bg-[#1C261F] border-[#8EA895] text-[#E6EFE8] shadow-sm'
+                        : 'bg-[#1C261F]/40 border-[#2D3D32] text-[#A3B5A7] hover:border-[#8EA895]'
                     }`}
                   >
                     {item.label}
@@ -325,13 +320,13 @@ export const ProviderOnboardingPage: React.FC = () => {
 
             {/* PROFESSIONAL DETAILS */}
             <Card className="p-6 space-y-5">
-              <div className="flex items-center gap-3 pb-3 border-b border-[#C8D7C7]">
-                <div className="p-2 bg-[#DDE8DC] text-[#7C9A82] border border-[#C8D7C7] rounded-lg">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#2D3D32]">
+                <div className="p-2 bg-[#1C261F] text-[#8EA895] border border-[#2D3D32] rounded-lg">
                   <UserCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-[#29352D]">Professional Information</h2>
-                  <p className="text-xs text-[#617066]">Fill required credentials and experience details.</p>
+                  <h2 className="text-base font-bold text-[#E6EFE8]">Professional Information</h2>
+                  <p className="text-xs text-[#A3B5A7]">Fill required credentials and experience details.</p>
                 </div>
               </div>
 
@@ -343,7 +338,7 @@ export const ProviderOnboardingPage: React.FC = () => {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
-                  leftIcon={<UserCheck className="w-4 h-4 text-[#7C9A82]" />}
+                  leftIcon={<UserCheck className="w-4 h-4 text-[#8EA895]" />}
                 />
 
                 <Input
@@ -353,7 +348,7 @@ export const ProviderOnboardingPage: React.FC = () => {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
-                  leftIcon={<Phone className="w-4 h-4 text-[#9A8FB5]" />}
+                  leftIcon={<Phone className="w-4 h-4 text-[#B3A7CF]" />}
                 />
 
                 <Input
@@ -363,7 +358,7 @@ export const ProviderOnboardingPage: React.FC = () => {
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   required
-                  leftIcon={<MapPin className="w-4 h-4 text-[#7C9A82]" />}
+                  leftIcon={<MapPin className="w-4 h-4 text-[#8EA895]" />}
                 />
 
                 <Input
@@ -373,11 +368,11 @@ export const ProviderOnboardingPage: React.FC = () => {
                   value={experienceYears}
                   onChange={(e) => setExperienceYears(Number(e.target.value))}
                   required
-                  leftIcon={<Clock className="w-4 h-4 text-[#D6A89A]" />}
+                  leftIcon={<Clock className="w-4 h-4 text-[#E89D9D]" />}
                 />
               </div>
 
-              <div className="space-y-4 pt-2 border-t border-[#C8D7C7]">
+              <div className="space-y-4 pt-2 border-t border-[#2D3D32]">
                 <Input
                   label={currentFieldLabels.f1Label}
                   type="text"
@@ -385,7 +380,7 @@ export const ProviderOnboardingPage: React.FC = () => {
                   value={field1}
                   onChange={(e) => setField1(e.target.value)}
                   required
-                  leftIcon={<ShieldCheck className="w-4 h-4 text-[#7C9A82]" />}
+                  leftIcon={<ShieldCheck className="w-4 h-4 text-[#8EA895]" />}
                 />
 
                 <Input
@@ -394,12 +389,12 @@ export const ProviderOnboardingPage: React.FC = () => {
                   placeholder={currentFieldLabels.f2Placeholder}
                   value={field2}
                   onChange={(e) => setField2(e.target.value)}
-                  leftIcon={<Briefcase className="w-4 h-4 text-[#9A8FB5]" />}
+                  leftIcon={<Briefcase className="w-4 h-4 text-[#B3A7CF]" />}
                 />
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-[#29352D] uppercase tracking-wide flex items-center gap-1.5">
-                    <FileText className="w-4 h-4 text-[#7C9A82]" /> Professional Bio & Practice Overview
+                  <label className="text-xs font-semibold text-[#A3B5A7] uppercase tracking-wide flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-[#8EA895]" /> Professional Bio & Practice Overview
                   </label>
                   <textarea
                     rows={4}
@@ -407,7 +402,7 @@ export const ProviderOnboardingPage: React.FC = () => {
                     onChange={(e) => setBio(e.target.value)}
                     required
                     placeholder="Summarize your court experience, legal specialization, or document drafting expertise..."
-                    className="w-full px-3.5 py-3 bg-[#FAFCF9] border border-[#C8D7C7] rounded-xl text-[#29352D] placeholder-[#8C9B90] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#7C9A82]/30 leading-relaxed"
+                    className="w-full px-3.5 py-3 bg-[#1C261F] border border-[#2D3D32] rounded-xl text-[#E6EFE8] placeholder-[#74887A] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#8EA895]/30 leading-relaxed"
                   />
                 </div>
               </div>

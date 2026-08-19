@@ -52,20 +52,20 @@ export const AINeedNavigatorModal: React.FC<AINeedNavigatorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#29352D]/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <Card className="max-w-lg w-full p-6 space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#C8D7C7] pb-3">
+        <div className="flex items-center justify-between border-b border-[#2D3D32] pb-3">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-[#DDE8DC] text-[#7C9A82] rounded-xl">
+            <div className="p-2 bg-[#1C261F] text-[#8EA895] rounded-xl border border-[#2D3D32]">
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-[#29352D]">AI Legal Need Navigator</h2>
-              <span className="text-xs text-[#617066]">Smart classification helper for service requests</span>
+              <h2 className="text-base font-extrabold text-[#E6EFE8]">AI Legal Need Navigator</h2>
+              <span className="text-xs text-[#A3B5A7]">Smart classification helper for service requests</span>
             </div>
           </div>
-          <button onClick={onClose} className="text-[#617066] hover:text-[#29352D]">
+          <button onClick={onClose} className="text-[#A3B5A7] hover:text-[#E6EFE8]">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -73,7 +73,7 @@ export const AINeedNavigatorModal: React.FC<AINeedNavigatorModalProps> = ({
         {!result ? (
           <form onSubmit={handleAnalyze} className="space-y-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-[#29352D] uppercase tracking-wide">
+              <label className="text-xs font-bold text-[#A3B5A7] uppercase tracking-wide">
                 Describe your problem in plain language
               </label>
               <textarea
@@ -82,12 +82,12 @@ export const AINeedNavigatorModal: React.FC<AINeedNavigatorModalProps> = ({
                 onChange={(e) => setDescriptionInput(e.target.value)}
                 required
                 placeholder="e.g. My tenant hasn't paid rent for 4 months and is refusing to vacate the premises..."
-                className="w-full px-3.5 py-3 bg-[#FAFCF9] border border-[#C8D7C7] rounded-xl text-[#29352D] placeholder-[#8C9B90] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#7C9A82]/30 leading-relaxed"
+                className="w-full px-3.5 py-3 bg-[#1C261F] border border-[#2D3D32] rounded-xl text-[#E6EFE8] placeholder-[#74887A] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#8EA895]/30 leading-relaxed"
               />
             </div>
 
             {error && (
-              <div className="p-3 bg-[#F4D6D6] border border-[#E8B4B4] text-[#5C1D1D] text-xs rounded-xl font-semibold">
+              <div className="p-3 bg-[#3D2020] border border-[#5E3232] text-[#E89D9D] text-xs rounded-xl font-semibold">
                 {error}
               </div>
             )}
@@ -103,30 +103,30 @@ export const AINeedNavigatorModal: React.FC<AINeedNavigatorModalProps> = ({
           </form>
         ) : (
           <div className="space-y-4 text-xs">
-            <div className="p-4 bg-[#DDE8DC] border border-[#C8D7C7] rounded-xl space-y-2">
-              <span className="text-[10px] font-bold text-[#7C9A82] uppercase tracking-wider block">
+            <div className="p-4 bg-[#1C261F] border border-[#2D3D32] rounded-xl space-y-2">
+              <span className="text-[10px] font-bold text-[#8EA895] uppercase tracking-wider block">
                 Classification Recommendation
               </span>
               <div className="flex items-center justify-between">
-                <span className="font-extrabold text-[#29352D] text-sm">{result.service_category}</span>
+                <span className="font-extrabold text-[#E6EFE8] text-sm">{result.service_category}</span>
                 <Badge variant="purple">{result.preferred_provider_type}</Badge>
               </div>
-              <p className="text-xs text-[#29352D] leading-relaxed">
+              <p className="text-xs text-[#E6EFE8] leading-relaxed">
                 "{result.summary_context}"
               </p>
             </div>
 
             {/* MANDATORY LEGAL DISCLAIMER BANNER */}
-            <div className="p-3 bg-[#F5E6CC] border border-[#E6CE9F] text-[#5C4114] text-[11px] rounded-xl flex items-start gap-2">
-              <ShieldAlert className="w-4 h-4 text-[#5C4114] shrink-0 mt-0.5" />
+            <div className="p-3 bg-[#3B301D] border border-[#5E4D2E] text-[#E3BA7E] text-[11px] rounded-xl flex items-start gap-2">
+              <ShieldAlert className="w-4 h-4 text-[#E3BA7E] shrink-0 mt-0.5" />
               <span>{result.disclaimer}</span>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-[#C8D7C7]">
+            <div className="flex items-center justify-between pt-2 border-t border-[#2D3D32]">
               <button
                 type="button"
                 onClick={() => setResult(null)}
-                className="text-xs text-[#7C9A82] hover:underline font-semibold"
+                className="text-xs text-[#8EA895] hover:underline font-semibold"
               >
                 Re-describe Problem
               </button>

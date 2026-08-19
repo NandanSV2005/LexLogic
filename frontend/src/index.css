@@ -1,21 +1,29 @@
 @import "tailwindcss";
 
 :root {
-  --bg-main: #E8F0E6;
-  --bg-surface: #DDE8DC;
-  --bg-card: #F0F4EC;
-  --accent-primary: #7C9A82;
-  --accent-primary-hover: #6B8870;
-  --accent-secondary: #9A8FB5;
-  --accent-tertiary: #D6A89A;
-  --text-primary: #29352D;
-  --text-secondary: #617066;
-  --border-subtle: #C8D7C7;
+  /* Dark Pastel LexLogic Color System */
+  --bg-main: #141C16;
+  --bg-surface: #1C261F;
+  --bg-card: #233027;
+  --bg-card-hover: #2C3C31;
+
+  --accent-primary: #8EA895;
+  --accent-primary-hover: #A2BCA9;
+  --accent-secondary: #B3A7CF;
+  --accent-tertiary: #E89D9D;
+  --accent-gold: #E3BA7E;
+
+  --text-primary: #E6EFE8;
+  --text-secondary: #A3B5A7;
+  --text-muted: #74887A;
+
+  --border-subtle: #2D3D32;
+  --border-strong: #3D5244;
 }
 
 @layer base {
   html {
-    color-scheme: light;
+    color-scheme: dark;
     scroll-behavior: smooth;
   }
 
@@ -29,17 +37,17 @@
   }
 
   ::selection {
-    background-color: #9A8FB5;
-    color: #FFFFFF;
+    background-color: #B3A7CF;
+    color: #141C16;
   }
 
   /* Accessibility focus ring styling */
   :focus-visible {
     outline: none;
     ring: 2px;
-    ring-color: #7C9A82;
+    ring-color: #8EA895;
     ring-offset: 2px;
-    ring-offset-color: #E8F0E6;
+    ring-offset-color: #141C16;
   }
 }
 
@@ -49,24 +57,24 @@
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #DDE8DC;
+  background: #1C261F;
 }
 ::-webkit-scrollbar-thumb {
-  background: #B4C6B3;
+  background: #2D3D32;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9BB09A;
+  background: #3D5244;
 }
 
-/* Glassmorphism fallback for pastel surfaces */
+/* Glassmorphism fallback for dark pastel surfaces */
 .pastel-card {
-  background: #F0F4EC;
-  border: 1px solid #C8D7C7;
-  box-shadow: 0 4px 20px -2px rgba(41, 53, 45, 0.05);
+  background: #233027;
+  border: 1px solid #2D3D32;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
 }
 
 .pastel-surface {
-  background: #DDE8DC;
-  border: 1px solid #C8D7C7;
+  background: #1C261F;
+  border: 1px solid #2D3D32;
 }

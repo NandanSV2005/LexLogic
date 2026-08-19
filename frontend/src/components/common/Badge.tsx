@@ -25,15 +25,15 @@ export const Badge: React.FC<BadgeProps> = ({
   className = '',
 }) => {
   const variantStyles: Record<BadgeVariant, string> = {
-    success: 'bg-[#D4E5D4] text-[#1F4724] border-[#B2D4B2]',
-    warning: 'bg-[#F5E6CC] text-[#5C4114] border-[#E6CE9F]',
-    error: 'bg-[#F4D6D6] text-[#5C1D1D] border-[#E8B4B4]',
-    danger: 'bg-[#F4D6D6] text-[#5C1D1D] border-[#E8B4B4]',
-    info: 'bg-[#D5E3F0] text-[#1C3B57] border-[#ADCDE6]',
-    neutral: 'bg-[#E2E8E2] text-[#3A473E] border-[#C4D0C4]',
-    indigo: 'bg-[#E6E2F0] text-[#3D3352] border-[#CBBFE0]',
-    purple: 'bg-[#E6E2F0] text-[#3D3352] border-[#CBBFE0]',
-    primary: 'bg-[#DCE7DB] text-[#29352D] border-[#B9CBB7]',
+    success: 'bg-[#1B3B2B] text-[#7ECB98] border-[#2D5E44]',
+    warning: 'bg-[#3B301D] text-[#E3BA7E] border-[#5E4D2E]',
+    error: 'bg-[#3D2020] text-[#E89D9D] border-[#5E3232]',
+    danger: 'bg-[#3D2020] text-[#E89D9D] border-[#5E3232]',
+    info: 'bg-[#1B2F3D] text-[#86C5DA] border-[#2B4B61]',
+    neutral: 'bg-[#1C261F] text-[#A3B5A7] border-[#2D3D32]',
+    indigo: 'bg-[#2B253D] text-[#B3A7CF] border-[#443A61]',
+    purple: 'bg-[#2B253D] text-[#B3A7CF] border-[#443A61]',
+    primary: 'bg-[#223328] text-[#8EA895] border-[#344F3C]',
   };
 
   const sizeStyles = {
