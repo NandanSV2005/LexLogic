@@ -18,6 +18,16 @@ from app.schemas.request import ServiceRequestCreate, ServiceRequestOut, Request
 from app.schemas.matching import MatchQueryInput, MatchedProviderOut, MatchResponse
 from app.schemas.document import DocumentOut, DocumentShareCreate, DocumentShareRevoke, DocumentShareOut
 from app.schemas.audit import AuditLogOut
+from app.schemas.verification import (
+    AdvocateCaseReferenceInput,
+    AdvocateCaseReferenceUpdate,
+    AdminCaseEvidenceReview,
+    AdvocateCaseReferenceOut,
+    AdvocateVerificationSubmit,
+    AdvocateVerificationProfileOut,
+    ProviderVerificationHistoryOut,
+    ProviderVerificationRecordOut,
+)
 
 __all__ = [
     "HealthResponse",
@@ -50,4 +60,10 @@ __all__ = [
     "DocumentShareRevoke",
     "DocumentShareOut",
     "AuditLogOut",
+    "AdvocateCaseReferenceInput",
+    "AdvocateCaseReferenceOut",
+    "AdvocateVerificationSubmit",
+    "AdvocateVerificationProfileOut",
+    "ProviderVerificationHistoryOut",
+    "ProviderVerificationRecordOut",
 ]

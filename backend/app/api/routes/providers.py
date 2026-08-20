@@ -1,6 +1,7 @@
 from typing import List, Optional
+from datetime import datetime, timezone
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.api.deps import require_provider, require_admin, get_current_active_user
@@ -13,6 +14,28 @@ from app.models.provider import (
     ProviderFieldValue,
 )
 from app.models.points import PointTransaction, PointAction
+from app.models.document import Document, DocumentVisibility
+from app.schemas.document import DocumentOut
+from app.services.document_storage import validate_and_save_upload_file
+from app.models.verification import (
+    DetailedVerificationStatus,
+    CredentialType,
+    EvidenceStatus,
+    ProviderVerificationRecord,
+    AdvocateVerificationProfile,
+    AdvocateCaseReference,
+    ProviderVerificationHistory,
+)
+from app.services.practice_verifier import ManualPracticeEvidenceVerifier
+from app.schemas.verification import (
+    AdvocateCaseReferenceInput,
+    AdvocateCaseReferenceUpdate,
+    AdminCaseEvidenceReview,
+    AdvocateVerificationSubmit,
+    ProviderVerificationRecordOut,
+    AdvocateVerificationProfileOut,
+    AdvocateCaseReferenceOut,
+)
 from app.services.points_service import award_points
 
 from app.schemas.provider import (
@@ -266,7 +289,7 @@ def get_my_points_history(
         PointTransaction.provider_id == provider.id
     ).order_by(PointTransaction.created_at.desc()).all()
 
-    return transactions
+    return [PointTransactionOut.model_validate(tx) for tx in transactions]
 
 
 @router.get(
@@ -341,6 +364,458 @@ def submit_verification(
     out = ProviderProfileDetailOut.model_validate(provider)
     out.generic_fields = _build_generic_fields_list(provider, db)
     return out
+
+
+@router.get(
+    "/verification/me",
+    response_model=ProviderVerificationRecordOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get current provider verification record and advocate profile",
+    description="Returns current provider verification record, detailed status indicators, advocate profile, case references, and audit history entries."
+)
+def get_provider_verification_record(
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> ProviderVerificationRecordOut:
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Provider profile not found"
+        )
+
+    verif_record = db.query(ProviderVerificationRecord).filter(ProviderVerificationRecord.provider_id == provider.id).first()
+    if not verif_record:
+        verif_record = ProviderVerificationRecord(
+            provider_id=provider.id,
+            overall_status=DetailedVerificationStatus.NOT_STARTED,
+            identity_status=DetailedVerificationStatus.NOT_STARTED,
+            credential_status=DetailedVerificationStatus.NOT_STARTED,
+            practice_status=DetailedVerificationStatus.NOT_STARTED,
+        )
+        db.add(verif_record)
+        db.commit()
+        db.refresh(verif_record)
+
+    return ProviderVerificationRecordOut.model_validate(verif_record)
+
+
+@router.post(
+    "/verification/advocate/submit",
+    response_model=ProviderVerificationRecordOut,
+    status_code=status.HTTP_200_OK,
+    summary="Submit advocate professional credential & practice verification",
+    description="Submits State Bar Council registration, credential evidence document, and optional case metadata references. Updates verification state to SUBMITTED for admin review."
+)
+def submit_advocate_verification(
+    submit_in: AdvocateVerificationSubmit,
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> ProviderVerificationRecordOut:
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Provider profile not found"
+        )
+
+    verif_record = db.query(ProviderVerificationRecord).filter(ProviderVerificationRecord.provider_id == provider.id).first()
+    if not verif_record:
+        verif_record = ProviderVerificationRecord(provider_id=provider.id)
+        db.add(verif_record)
+        db.commit()
+        db.refresh(verif_record)
+
+    adv_profile = db.query(AdvocateVerificationProfile).filter(AdvocateVerificationProfile.verification_record_id == verif_record.id).first()
+    if not adv_profile:
+        adv_profile = AdvocateVerificationProfile(
+            verification_record_id=verif_record.id,
+            provider_id=provider.id,
+        )
+        db.add(adv_profile)
+
+    adv_profile.full_legal_name = submit_in.full_legal_name or provider.full_name
+    adv_profile.jurisdiction_city = submit_in.jurisdiction_city or provider.location
+    adv_profile.jurisdiction_state = submit_in.jurisdiction_state
+    adv_profile.state_bar_council = submit_in.state_bar_council
+    adv_profile.enrollment_number = submit_in.enrollment_number
+    adv_profile.enrollment_year = submit_in.enrollment_year
+    adv_profile.credential_type = submit_in.credential_type
+    adv_profile.credential_document_id = submit_in.credential_document_id
+    adv_profile.credential_verification_status = DetailedVerificationStatus.SUBMITTED
+    db.commit()
+    db.refresh(adv_profile)
+
+    if submit_in.practice_areas:
+        generic_updates = [
+            {"field_name": "practice_area", "value": submit_in.practice_areas},
+            {"field_name": "bar_registration", "value": submit_in.enrollment_number},
+        ]
+        update_provider_generic_fields(db, provider, generic_updates)
+
+    db.query(AdvocateCaseReference).filter(AdvocateCaseReference.advocate_profile_id == adv_profile.id).delete()
+    db.commit()
+
+    has_case_references = len(submit_in.case_references) > 0
+    for case_in in submit_in.case_references:
+        case_ref = AdvocateCaseReference(
+            advocate_profile_id=adv_profile.id,
+            provider_id=provider.id,
+            case_number=case_in.case_number,
+            court_name=case_in.court_name,
+            case_type=case_in.case_type,
+            case_year=case_in.case_year,
+            advocate_role=case_in.advocate_role,
+            supporting_document_id=case_in.supporting_document_id,
+            evidence_status=EvidenceStatus.SUBMITTED,
+            verification_status=DetailedVerificationStatus.SUBMITTED,
+        )
+        db.add(case_ref)
+
+    old_status = verif_record.overall_status.value
+    verif_record.overall_status = DetailedVerificationStatus.SUBMITTED
+    verif_record.identity_status = DetailedVerificationStatus.SUBMITTED
+    verif_record.credential_status = DetailedVerificationStatus.SUBMITTED
+    verif_record.practice_status = DetailedVerificationStatus.SUBMITTED if has_case_references else DetailedVerificationStatus.NOT_STARTED
+
+    history = ProviderVerificationHistory(
+        verification_record_id=verif_record.id,
+        provider_id=provider.id,
+        actor_id=current_user.id,
+        action="SUBMITTED_ADVOCATE_VERIFICATION",
+        from_status=old_status,
+        to_status=DetailedVerificationStatus.SUBMITTED.value,
+        notes=f"Submitted Bar Enrollment {submit_in.enrollment_number} ({submit_in.state_bar_council}) with {len(submit_in.case_references)} case reference(s)."
+    )
+    db.add(history)
+
+    provider.verification_status = VerificationStatus.SUBMITTED
+
+    db.commit()
+    db.refresh(verif_record)
+    db.refresh(provider)
+
+    calculate_profile_completion(provider, db)
+
+    log_audit(
+        db=db,
+        user_id=current_user.id,
+        action="SUBMITTED_ADVOCATE_VERIFICATION",
+        resource_type="provider",
+        resource_id=provider.id,
+        metadata_json={
+            "enrollment_number": submit_in.enrollment_number,
+            "state_bar_council": submit_in.state_bar_council,
+            "case_references_count": len(submit_in.case_references),
+        }
+    )
+
+    return ProviderVerificationRecordOut.model_validate(verif_record)
+
+
+@router.post(
+    "/verification/credential-document",
+    response_model=DocumentOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload advocate verification credential document into private vault",
+    description="Uploads bar certificate or ID card file into private storage bound strictly to provider ownership."
+)
+async def upload_credential_document(
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> Document:
+    content = await file.read()
+    storage_path, sanitized_filename, file_size, mime_type = validate_and_save_upload_file(file, content)
+
+    doc_title = f"Credential Evidence - {sanitized_filename}"
+    document = Document(
+        owner_id=current_user.id,
+        title=doc_title,
+        filename=sanitized_filename,
+        file_path=storage_path,
+        file_size_bytes=file_size,
+        mime_type=mime_type,
+        visibility=DocumentVisibility.PRIVATE,
+    )
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+
+    log_audit(
+        db=db,
+        user_id=current_user.id,
+        action="UPLOAD_VERIFICATION_CREDENTIAL_DOCUMENT",
+        resource_type="document",
+        resource_id=document.id,
+        metadata_json={"filename": sanitized_filename}
+    )
+
+    return document
+
+
+# ==============================================================================
+# PHASE 3: ADVOCATE PRACTICE EVIDENCE ENDPOINTS
+# ==============================================================================
+
+@router.get(
+    "/verification/practice-evidence",
+    response_model=List[AdvocateCaseReferenceOut],
+    status_code=status.HTTP_200_OK,
+    summary="Get current provider's submitted practice case references",
+    description="Returns practice case references for authenticated provider. Enforces strict provider ownership isolation."
+)
+def get_my_practice_evidence(
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> List[AdvocateCaseReferenceOut]:
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
+
+    case_refs = db.query(AdvocateCaseReference).filter(
+        AdvocateCaseReference.provider_id == provider.id
+    ).order_by(AdvocateCaseReference.created_at.desc()).all()
+
+    return [AdvocateCaseReferenceOut.model_validate(ref) for ref in case_refs]
+
+
+@router.post(
+    "/verification/practice-evidence",
+    response_model=AdvocateCaseReferenceOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a practice case evidence reference",
+    description="Adds a practice case reference. Prevents duplicates, queues for manual review, and records CASE_EVIDENCE_SUBMITTED audit log."
+)
+def add_practice_evidence(
+    case_in: AdvocateCaseReferenceInput,
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> AdvocateCaseReferenceOut:
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
+
+    verif_record = db.query(ProviderVerificationRecord).filter(ProviderVerificationRecord.provider_id == provider.id).first()
+    if not verif_record:
+        verif_record = ProviderVerificationRecord(provider_id=provider.id)
+        db.add(verif_record)
+        db.commit()
+        db.refresh(verif_record)
+
+    adv_profile = db.query(AdvocateVerificationProfile).filter(AdvocateVerificationProfile.verification_record_id == verif_record.id).first()
+    if not adv_profile:
+        adv_profile = AdvocateVerificationProfile(verification_record_id=verif_record.id, provider_id=provider.id)
+        db.add(adv_profile)
+        db.commit()
+        db.refresh(adv_profile)
+
+    existing_duplicate = db.query(AdvocateCaseReference).filter(
+        AdvocateCaseReference.provider_id == provider.id,
+        AdvocateCaseReference.case_number == case_in.case_number.strip(),
+        AdvocateCaseReference.court_name == case_in.court_name.strip()
+    ).first()
+
+    if existing_duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Case reference '{case_in.case_number}' for court '{case_in.court_name}' has already been submitted."
+        )
+
+    case_ref = AdvocateCaseReference(
+        advocate_profile_id=adv_profile.id,
+        provider_id=provider.id,
+        case_number=case_in.case_number.strip(),
+        court_name=case_in.court_name.strip(),
+        case_type=case_in.case_type.strip() if case_in.case_type else None,
+        case_year=case_in.case_year,
+        advocate_role=case_in.advocate_role.strip() if case_in.advocate_role else None,
+        supporting_document_id=case_in.supporting_document_id,
+        evidence_status=EvidenceStatus.SUBMITTED,
+        verification_status=DetailedVerificationStatus.SUBMITTED,
+    )
+
+    verifier = ManualPracticeEvidenceVerifier()
+    verification_res = verifier.verify_case_reference(case_ref)
+    case_ref.evidence_source_reference = verification_res.get("source_reference")
+    case_ref.verification_notes = verification_res.get("notes")
+
+    db.add(case_ref)
+    db.commit()
+    db.refresh(case_ref)
+
+    log_audit(
+        db=db,
+        user_id=current_user.id,
+        action="CASE_EVIDENCE_SUBMITTED",
+        resource_type="advocate_case_reference",
+        resource_id=case_ref.id,
+        metadata_json={
+            "case_number": case_ref.case_number,
+            "court_name": case_ref.court_name,
+            "provider_id": provider.id,
+        }
+    )
+
+    return AdvocateCaseReferenceOut.model_validate(case_ref)
+
+
+@router.put(
+    "/verification/practice-evidence/{case_id}",
+    response_model=AdvocateCaseReferenceOut,
+    status_code=status.HTTP_200_OK,
+    summary="Update a practice case evidence reference",
+    description="Updates existing case reference metadata. Enforces provider ownership (IDOR protection) and logs CASE_EVIDENCE_MODIFIED."
+)
+def update_practice_evidence(
+    case_id: int,
+    case_in: AdvocateCaseReferenceUpdate,
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> AdvocateCaseReferenceOut:
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
+
+    case_ref = db.query(AdvocateCaseReference).filter(AdvocateCaseReference.id == case_id).first()
+    if not case_ref:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Practice evidence reference not found")
+
+    if case_ref.provider_id != provider.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not own this practice evidence reference."
+        )
+
+    if case_in.case_number is not None:
+        case_ref.case_number = case_in.case_number.strip()
+    if case_in.court_name is not None:
+        case_ref.court_name = case_in.court_name.strip()
+    if case_in.case_type is not None:
+        case_ref.case_type = case_in.case_type.strip()
+    if case_in.case_year is not None:
+        case_ref.case_year = case_in.case_year
+    if case_in.advocate_role is not None:
+        case_ref.advocate_role = case_in.advocate_role.strip()
+    if case_in.supporting_document_id is not None:
+        case_ref.supporting_document_id = case_in.supporting_document_id
+
+    case_ref.verification_status = DetailedVerificationStatus.SUBMITTED
+    db.commit()
+    db.refresh(case_ref)
+
+    log_audit(
+        db=db,
+        user_id=current_user.id,
+        action="CASE_EVIDENCE_MODIFIED",
+        resource_type="advocate_case_reference",
+        resource_id=case_ref.id,
+        metadata_json={
+            "case_number": case_ref.case_number,
+            "court_name": case_ref.court_name,
+            "provider_id": provider.id,
+        }
+    )
+
+    return AdvocateCaseReferenceOut.model_validate(case_ref)
+
+
+@router.delete(
+    "/verification/practice-evidence/{case_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Delete a practice case evidence reference",
+    description="Deletes existing case reference. Enforces provider ownership (IDOR protection)."
+)
+def delete_practice_evidence(
+    case_id: int,
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+):
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
+
+    case_ref = db.query(AdvocateCaseReference).filter(AdvocateCaseReference.id == case_id).first()
+    if not case_ref:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Practice evidence reference not found")
+
+    if case_ref.provider_id != provider.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not own this practice evidence reference."
+        )
+
+    db.delete(case_ref)
+    db.commit()
+
+    return {"message": "Practice evidence reference deleted successfully"}
+
+
+@router.put(
+    "/verification/practice-evidence/{case_id}/review",
+    response_model=AdvocateCaseReferenceOut,
+    status_code=status.HTTP_200_OK,
+    summary="Admin review decision on practice case evidence",
+    description="Admin approves, rejects, or requests changes on case evidence. Logs CASE_EVIDENCE_REVIEWED, CASE_EVIDENCE_APPROVED, or CASE_EVIDENCE_REJECTED."
+)
+def admin_review_practice_evidence(
+    case_id: int,
+    review_in: AdminCaseEvidenceReview,
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+) -> AdvocateCaseReferenceOut:
+    case_ref = db.query(AdvocateCaseReference).filter(AdvocateCaseReference.id == case_id).first()
+    if not case_ref:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Practice evidence reference not found")
+
+    case_ref.verification_status = review_in.status
+    if review_in.notes:
+        case_ref.verification_notes = review_in.notes
+    if review_in.evidence_source_reference:
+        case_ref.evidence_source_reference = review_in.evidence_source_reference
+    case_ref.verified_at = datetime.now(timezone.utc)
+
+    if review_in.status == DetailedVerificationStatus.VERIFIED:
+        case_ref.evidence_status = EvidenceStatus.VERIFIED
+    elif review_in.status in (DetailedVerificationStatus.REJECTED, DetailedVerificationStatus.UNVERIFIED):
+        case_ref.evidence_status = EvidenceStatus.REJECTED
+
+    db.commit()
+    db.refresh(case_ref)
+
+    log_audit(
+        db=db,
+        user_id=admin_user.id,
+        action="CASE_EVIDENCE_REVIEWED",
+        resource_type="advocate_case_reference",
+        resource_id=case_ref.id,
+        metadata_json={
+            "target_status": review_in.status.value,
+            "provider_id": case_ref.provider_id,
+            "notes": review_in.notes,
+        }
+    )
+
+    if review_in.status == DetailedVerificationStatus.VERIFIED:
+        log_audit(
+            db=db,
+            user_id=admin_user.id,
+            action="CASE_EVIDENCE_APPROVED",
+            resource_type="advocate_case_reference",
+            resource_id=case_ref.id,
+            metadata_json={"provider_id": case_ref.provider_id}
+        )
+    elif review_in.status in (DetailedVerificationStatus.REJECTED, DetailedVerificationStatus.UNVERIFIED):
+        log_audit(
+            db=db,
+            user_id=admin_user.id,
+            action="CASE_EVIDENCE_REJECTED",
+            resource_type="advocate_case_reference",
+            resource_id=case_ref.id,
+            metadata_json={"provider_id": case_ref.provider_id}
+        )
+
+    return AdvocateCaseReferenceOut.model_validate(case_ref)
 
 
 @router.put(

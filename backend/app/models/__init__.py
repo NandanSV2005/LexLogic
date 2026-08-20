@@ -15,6 +15,16 @@ from app.models.audit import AuditLog
 from app.models.points import PointTransaction, PointAction
 from app.models.appointment import Appointment, AppointmentStatus
 
+from app.models.verification import (
+    DetailedVerificationStatus,
+    CredentialType,
+    EvidenceStatus,
+    ProviderVerificationRecord,
+    AdvocateVerificationProfile,
+    AdvocateCaseReference,
+    ProviderVerificationHistory,
+)
+
 __all__ = [
     "Base",
     "User",
@@ -25,6 +35,13 @@ __all__ = [
     "AvailabilityStatus",
     "ProviderFieldDefinition",
     "ProviderFieldValue",
+    "DetailedVerificationStatus",
+    "CredentialType",
+    "EvidenceStatus",
+    "ProviderVerificationRecord",
+    "AdvocateVerificationProfile",
+    "AdvocateCaseReference",
+    "ProviderVerificationHistory",
     "ServiceRequest",
     "RequestStatus",
     "RequestProvider",

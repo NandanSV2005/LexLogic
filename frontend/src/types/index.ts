@@ -41,6 +41,106 @@ export enum AvailabilityStatus {
   UNAVAILABLE = "UNAVAILABLE",
 }
 
+export enum DetailedVerificationStatus {
+  NOT_STARTED = "NOT_STARTED",
+  SUBMITTED = "SUBMITTED",
+  AUTOMATED_REVIEW = "AUTOMATED_REVIEW",
+  MANUAL_REVIEW = "MANUAL_REVIEW",
+  VERIFIED = "VERIFIED",
+  REJECTED = "REJECTED",
+  EXPIRED = "EXPIRED",
+  SUSPENDED = "SUSPENDED",
+}
+
+export enum CredentialType {
+  BAR_ENROLLMENT_CERTIFICATE = "BAR_ENROLLMENT_CERTIFICATE",
+  BAR_ID_CARD = "BAR_ID_CARD",
+  PROPOSITION_CERTIFICATE = "PROPOSITION_CERTIFICATE",
+  OTHER = "OTHER",
+}
+
+export enum EvidenceStatus {
+  SUBMITTED = "SUBMITTED",
+  VERIFIED = "VERIFIED",
+  REJECTED = "REJECTED",
+  FLAGGED = "FLAGGED",
+}
+
+export interface AdvocateCaseReference {
+  id?: number;
+  case_number: string;
+  court_name: string;
+  case_type?: string;
+  case_year?: number;
+  advocate_role?: string;
+  supporting_document_id?: number;
+  evidence_status?: EvidenceStatus;
+  verification_status?: DetailedVerificationStatus;
+  verification_notes?: string;
+}
+
+export interface AdvocateVerificationSubmit {
+  full_legal_name?: string;
+  jurisdiction_city?: string;
+  jurisdiction_state?: string;
+  state_bar_council: string;
+  enrollment_number: string;
+  enrollment_year: number;
+  credential_type: CredentialType;
+  credential_document_id?: number;
+  practice_areas?: string;
+  case_references: AdvocateCaseReference[];
+}
+
+export interface AdvocateVerificationProfile {
+  id: number;
+  verification_record_id: number;
+  provider_id: number;
+  full_legal_name?: string;
+  jurisdiction_city?: string;
+  jurisdiction_state?: string;
+  state_bar_council?: string;
+  enrollment_number?: string;
+  enrollment_year?: number;
+  credential_type: CredentialType;
+  credential_document_id?: number;
+  credential_verification_status: DetailedVerificationStatus;
+  credential_verified_at?: string;
+  verification_source_reference?: string;
+  verification_notes?: string;
+  created_at: string;
+  updated_at: string;
+  case_references: AdvocateCaseReference[];
+}
+
+export interface ProviderVerificationHistory {
+  id: number;
+  verification_record_id: number;
+  provider_id: number;
+  actor_id?: number;
+  action: string;
+  from_status?: string;
+  to_status: string;
+  notes?: string;
+  timestamp: string;
+}
+
+export interface ProviderVerificationRecord {
+  id: number;
+  provider_id: number;
+  overall_status: DetailedVerificationStatus;
+  identity_status: DetailedVerificationStatus;
+  credential_status: DetailedVerificationStatus;
+  practice_status: DetailedVerificationStatus;
+  last_reviewed_by_admin_id?: number;
+  last_reviewed_at?: string;
+  verification_notes?: string;
+  created_at: string;
+  updated_at: string;
+  advocate_profile?: AdvocateVerificationProfile;
+  history_entries: ProviderVerificationHistory[];
+}
+
 export interface ProviderFieldValue {
   field_name: string;
   field_label?: string;

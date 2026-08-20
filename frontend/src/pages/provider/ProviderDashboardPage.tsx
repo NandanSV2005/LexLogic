@@ -65,20 +65,31 @@ export const ProviderDashboardPage: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      const [profData, metricData, eligibleData, caseData, pointsData] = await Promise.all([
-        providersApi.getMe(),
+      const profData = await providersApi.getMe();
+      setProfile(profData);
+
+      // Automatic onboarding redirect check if profile completion is incomplete (< 100%)
+      if (!profData.is_profile_complete) {
+        navigate('/provider/onboarding', { replace: true });
+        return;
+      }
+
+      const [metricData, eligibleData, caseData, pointsData] = await Promise.all([
         providersApi.getDashboard(),
         requestsApi.getEligibleRequests(),
         requestsApi.listMyProviderCases(),
         providersApi.getPointsHistory().catch(() => []),
       ]);
 
-      setProfile(profData);
       setMetrics(metricData);
       setEligibleRequests(eligibleData);
       setMyCases(caseData);
       setPointsHistory(pointsData);
     } catch (err: any) {
+      if (err.response?.status === 403 || err.message?.includes('incomplete')) {
+        navigate('/provider/onboarding', { replace: true });
+        return;
+      }
       setErrorMessage(err.message || 'Failed to load provider dashboard data.');
     } finally {
       setIsLoading(false);

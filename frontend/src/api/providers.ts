@@ -90,4 +90,25 @@ export const providersApi = {
     const response = await apiClient.get<PointTransactionOut[]>('/api/providers/me/points/history');
     return response.data;
   },
+
+  getVerificationRecord: async (): Promise<import('../types').ProviderVerificationRecord> => {
+    const response = await apiClient.get<import('../types').ProviderVerificationRecord>('/api/providers/verification/me');
+    return response.data;
+  },
+
+  submitAdvocateVerification: async (data: import('../types').AdvocateVerificationSubmit): Promise<import('../types').ProviderVerificationRecord> => {
+    const response = await apiClient.post<import('../types').ProviderVerificationRecord>('/api/providers/verification/advocate/submit', data);
+    return response.data;
+  },
+
+  uploadCredentialDocument: async (file: File): Promise<import('../types').DocumentItem> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<import('../types').DocumentItem>('/api/providers/verification/credential-document', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };

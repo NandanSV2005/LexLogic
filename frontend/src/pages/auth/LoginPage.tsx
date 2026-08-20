@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Scale, Lock, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { authApi } from '../../api';
+import { authApi, providersApi } from '../../api';
 import { UserRole } from '../../types';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
@@ -30,6 +30,16 @@ export const LoginPage: React.FC = () => {
       if (response.user.role === UserRole.CITIZEN) {
         navigate('/citizen/dashboard');
       } else if (response.user.role === UserRole.PROVIDER) {
+        try {
+          const providerProfile = await providersApi.getMe();
+          if (!providerProfile.is_profile_complete) {
+            navigate('/provider/onboarding');
+            return;
+          }
+        } catch (err) {
+          navigate('/provider/onboarding');
+          return;
+        }
         navigate('/provider/dashboard');
       } else if (response.user.role === UserRole.ADMIN) {
         navigate('/admin/dashboard');

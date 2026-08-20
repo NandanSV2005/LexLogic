@@ -100,7 +100,10 @@ def seed_default_provider_field_definitions(db: Session) -> None:
                 is_required=def_data["is_required"],
             )
             db.add(field_def)
-    db.commit()
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
 
 
 def calculate_profile_completion(provider: Provider, db: Session) -> float:

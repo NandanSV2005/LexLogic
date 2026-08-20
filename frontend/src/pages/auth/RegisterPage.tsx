@@ -39,7 +39,7 @@ export const RegisterPage: React.FC = () => {
       if (response.user.role === UserRole.CITIZEN) {
         navigate('/citizen/dashboard');
       } else if (response.user.role === UserRole.PROVIDER) {
-        navigate('/provider/dashboard');
+        navigate('/provider/onboarding');
       } else {
         navigate('/citizen/dashboard');
       }

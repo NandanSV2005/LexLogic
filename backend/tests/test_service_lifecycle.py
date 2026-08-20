@@ -1,7 +1,6 @@
 import io
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
 from app.db.database import SessionLocal, engine
 from app.db.base import Base
 from app.core.security import get_password_hash, create_access_token
@@ -10,6 +9,8 @@ from app.models.provider import Provider, ProviderType, VerificationStatus, Avai
 from app.models.request import ServiceRequest, RequestStatus, RequestProvider, InteractionStatus
 from app.models.document import Document, DocumentShare, DocumentSharePermission, DocumentShareStatus, DocumentVisibility
 from app.models.audit import AuditLog
+from app.models.verification import ProviderVerificationRecord, AdvocateVerificationProfile, AdvocateCaseReference, ProviderVerificationHistory
+from app.main import app
 from app.services.provider_service import seed_default_provider_field_definitions
 
 VALID_PDF_BYTES = b"%PDF-1.4 test deed content for post-match service lifecycle..."

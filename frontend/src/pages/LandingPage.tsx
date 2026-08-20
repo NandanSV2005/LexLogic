@@ -241,10 +241,14 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* WHY LEXLOGIC SECTION */}
-      <section id="why-lexlogic" className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+      {/* WHY LEXLOGIC & FOR PROVIDERS SECTION */}
+      <section id="for-providers" className="py-16">
+        <div id="why-lexlogic" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#1C261F] border border-[#2D3D32] rounded-full text-xs font-semibold text-[#8EA895] mb-1">
+              <Users className="w-3.5 h-3.5" />
+              <span>For Legal & Specialized Providers</span>
+            </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-[#E6EFE8] tracking-tight">
               Ecosystem & Service Delivery Architecture
             </h2>
@@ -287,15 +291,15 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* SECURE DOCUMENT SECURITY HIGHLIGHT */}
-      <section className="py-16 bg-[#1C261F]/60 border-t border-[#2D3D32]">
+      {/* SECURE DOCUMENT SECURITY & FOR CITIZENS HIGHLIGHT */}
+      <section id="for-citizens" className="py-16 bg-[#1C261F]/60 border-t border-[#2D3D32]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="p-8 sm:p-12 border-[#2D3D32] bg-[#233027]">
             <div className="flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="space-y-4 max-w-xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#1C261F] border border-[#2D3D32] rounded-full text-xs font-semibold text-[#E6EFE8]">
                   <Lock className="w-3.5 h-3.5 text-[#8EA895]" />
-                  <span>Privacy-by-Default Architecture</span>
+                  <span>For Citizens — Privacy-by-Default Architecture</span>
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-bold text-[#E6EFE8] tracking-tight">
                   Citizen-Controlled Document Access

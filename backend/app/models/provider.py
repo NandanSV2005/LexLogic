@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from app.models.user import User
     from app.models.request import RequestProvider
     from app.models.points import PointTransaction
+    from app.models.verification import ProviderVerificationRecord
 
 
 
@@ -77,6 +78,9 @@ class Provider(Base):
     )
     point_transactions: Mapped[List["PointTransaction"]] = relationship(
         "PointTransaction", back_populates="provider", cascade="all, delete-orphan"
+    )
+    verification_record: Mapped[Optional["ProviderVerificationRecord"]] = relationship(
+        "ProviderVerificationRecord", back_populates="provider", uselist=False, cascade="all, delete-orphan"
     )
 
     @property
