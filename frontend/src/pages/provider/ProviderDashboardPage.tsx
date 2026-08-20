@@ -12,11 +12,13 @@ import { providersApi, requestsApi } from '../../api';
 import { getProviderProfessionConfig } from '../../config/providerConfig';
 import {
   Provider,
+  ProviderType,
   ProviderDashboardMetrics,
   ServiceRequest,
   RequestStatus,
   AvailabilityStatus,
   VerificationStatus,
+  DetailedVerificationStatus,
   PointTransactionOut,
 } from '../../types';
 import {
@@ -68,8 +70,22 @@ export const ProviderDashboardPage: React.FC = () => {
       const profData = await providersApi.getMe();
       setProfile(profData);
 
-      // Automatic onboarding redirect check if profile completion is incomplete (< 100%)
-      if (!profData.is_profile_complete) {
+      // Check Advocate / Provider verification record
+      let vRecord = null;
+      try {
+        vRecord = await providersApi.getVerificationRecord();
+      } catch (e) {
+        // Ignored if verification endpoint fails
+      }
+
+      // Check if profile or verification is incomplete
+      const isAdvocateVerificationIncomplete =
+        profData.provider_type === ProviderType.ADVOCATE &&
+        (!vRecord ||
+          vRecord.overall_status === DetailedVerificationStatus.NOT_STARTED ||
+          !vRecord.advocate_profile?.enrollment_number);
+
+      if (!profData.is_profile_complete || isAdvocateVerificationIncomplete) {
         navigate('/provider/onboarding', { replace: true });
         return;
       }
@@ -86,11 +102,15 @@ export const ProviderDashboardPage: React.FC = () => {
       setMyCases(caseData);
       setPointsHistory(pointsData);
     } catch (err: any) {
-      if (err.response?.status === 403 || err.message?.includes('incomplete')) {
+      const is403 = err?.status === 403 || err?.response?.status === 403;
+      const msg = (err?.message || '').toLowerCase();
+      const isIncomplete = is403 || msg.includes('incomplete') || msg.includes('profile') || msg.includes('forbidden');
+
+      if (isIncomplete) {
         navigate('/provider/onboarding', { replace: true });
         return;
       }
-      setErrorMessage(err.message || 'Failed to load provider dashboard data.');
+      setErrorMessage(err?.message || 'Failed to load provider dashboard data.');
     } finally {
       setIsLoading(false);
     }
