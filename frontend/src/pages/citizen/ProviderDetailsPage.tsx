@@ -7,6 +7,9 @@ import {
   CheckCircle2,
   ArrowLeft,
   Award,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Navbar } from '../../components/layout/Navbar';
 import { Card } from '../../components/common/Card';
@@ -28,6 +31,7 @@ export const ProviderDetailsPage: React.FC = () => {
   const [provider, setProvider] = useState<Provider | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState<boolean>(false);
 
   const fetchProviderProfile = async () => {
     if (!providerId || isNaN(Number(providerId))) {
@@ -213,6 +217,111 @@ export const ProviderDetailsPage: React.FC = () => {
                 </div>
               </Card>
             </div>
+
+            {/* VERIFICATION TRANSPARENCY SECTION */}
+            <Card className="p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-[#2D3D32]">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-[#7ECB98]" />
+                  <h3 className="text-sm font-bold text-[#E6EFE8] uppercase tracking-wider">
+                    Verification Record & Transparency
+                  </h3>
+                </div>
+
+                {provider.verification_status === VerificationStatus.VERIFIED ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#7ECB98] bg-[#1B3B2B] border border-[#2D5E44] px-3 py-1 rounded-full">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Professional Credential Verified
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[#A3B5A7] bg-[#1C261F] border border-[#2D3D32] px-3 py-1 rounded-full">
+                    <Clock className="w-3.5 h-3.5" /> {provider.verification_status}
+                  </span>
+                )}
+              </div>
+
+              {/* Public Verification Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+                <div className="p-3.5 bg-[#1C261F] rounded-xl border border-[#2D3D32] space-y-1">
+                  <span className="text-[#A3B5A7] font-semibold text-[11px] block uppercase tracking-wide">
+                    Profession
+                  </span>
+                  <span className="text-[#E6EFE8] font-bold">
+                    {provider.verification_transparency?.profession || (isAdvocate ? 'Advocate' : provider.provider_type)}
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-[#1C261F] rounded-xl border border-[#2D3D32] space-y-1">
+                  <span className="text-[#A3B5A7] font-semibold text-[11px] block uppercase tracking-wide">
+                    Registration Authority
+                  </span>
+                  <span className="text-[#E6EFE8] font-bold">
+                    {provider.verification_transparency?.registration_authority || (isAdvocate ? 'State Bar Council' : 'Licensing Authority')}
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-[#1C261F] rounded-xl border border-[#2D3D32] space-y-1">
+                  <span className="text-[#A3B5A7] font-semibold text-[11px] block uppercase tracking-wide">
+                    Enrollment Information
+                  </span>
+                  <span className="text-[#E6EFE8] font-bold font-mono">
+                    {provider.verification_transparency?.enrollment_number_masked || 'Partially masked'}
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-[#1C261F] rounded-xl border border-[#2D3D32] space-y-1">
+                  <span className="text-[#A3B5A7] font-semibold text-[11px] block uppercase tracking-wide">
+                    Verification Status
+                  </span>
+                  <span className={`font-bold ${provider.verification_status === VerificationStatus.VERIFIED ? 'text-[#7ECB98]' : 'text-[#A3B5A7]'}`}>
+                    {provider.verification_transparency?.verification_status || provider.verification_status}
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-[#1C261F] rounded-xl border border-[#2D3D32] space-y-1">
+                  <span className="text-[#A3B5A7] font-semibold text-[11px] block uppercase tracking-wide">
+                    Last Verification
+                  </span>
+                  <span className="text-[#E6EFE8] font-medium">
+                    {provider.verification_transparency?.last_verified_date || 'Date'}
+                  </span>
+                </div>
+
+                <div className="p-3.5 bg-[#1C261F] rounded-xl border border-[#2D3D32] space-y-1">
+                  <span className="text-[#A3B5A7] font-semibold text-[11px] block uppercase tracking-wide">
+                    Practice Evidence
+                  </span>
+                  <span className="text-[#E6EFE8] font-medium">
+                    {provider.verification_transparency?.practice_evidence_status ||
+                      (provider.practice_evidence_reviewed ? 'Reviewed' : 'Not available')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Expandable "How verification works" Section */}
+              <div className="mt-5 pt-3 border-t border-[#2D3D32]">
+                <button
+                  onClick={() => setIsHowItWorksOpen(!isHowItWorksOpen)}
+                  className="flex items-center justify-between w-full text-left text-xs font-semibold text-[#8EA895] hover:text-[#A2BCA9] transition-colors py-1 focus:outline-none"
+                  aria-expanded={isHowItWorksOpen}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <HelpCircle className="w-4 h-4 text-[#8EA895]" /> How verification works
+                  </span>
+                  {isHowItWorksOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+
+                {isHowItWorksOpen && (
+                  <div className="mt-3 p-4 bg-[#1C261F] rounded-xl border border-[#2D3D32] text-xs text-[#A3B5A7] leading-relaxed space-y-2">
+                    <p>
+                      LexLogic separates professional credential verification from practice verification. Professional credentials establish professional status, while practice evidence provides additional evidence of professional activity.
+                    </p>
+                    <div className="pt-2 border-t border-[#2D3D32] text-[11px] text-[#8EA895] italic">
+                      Zero exposure of private identity documents, uploaded certificates, case records, or internal admin notes.
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
 
             {/* WHY THIS PROVIDER MATCHES SECTION */}
             <Card className="p-6">

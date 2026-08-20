@@ -49,6 +49,7 @@ from app.schemas.provider import (
     ProviderFieldValueInput,
     ProviderFieldValueDetail,
     ProviderPublicOut,
+    VerificationTransparencyDetail,
     ProviderVerificationSubmit,
     AdminVerificationDecision,
     ProviderDashboardOut,
@@ -1225,6 +1226,27 @@ def admin_verify_provider(
     return out
 
 
+def mask_enrollment_number(raw_num: Optional[str]) -> Optional[str]:
+    """Partially mask enrollment/registration numbers for public citizen display."""
+    if not raw_num:
+        return None
+    raw_num = raw_num.strip()
+    if "/" in raw_num:
+        parts = raw_num.split("/")
+        if len(parts) >= 3:
+            masked_num = "*" * max(len(parts[1]), 3)
+            return f"{parts[0]}/{masked_num}/{parts[-1]}"
+        elif len(parts) == 2:
+            masked_num = "*" * max(len(parts[0]), 3)
+            return f"{masked_num}/{parts[1]}"
+    if len(raw_num) <= 4:
+        return raw_num[0] + "*" * (len(raw_num) - 1)
+    prefix_len = min(2, len(raw_num) // 4)
+    suffix_len = min(2, len(raw_num) // 4)
+    mask_len = len(raw_num) - prefix_len - suffix_len
+    return raw_num[:prefix_len] + ("*" * mask_len) + raw_num[-suffix_len:]
+
+
 @router.get(
     "/{provider_id}",
     response_model=ProviderPublicOut,
@@ -1252,17 +1274,68 @@ def get_public_provider_profile(
         (verif_rec is not None and verif_rec.credential_status == DetailedVerificationStatus.VERIFIED)
     )
 
+    total_cases_count = 0
     verified_cases_count = 0
-    if verif_rec and verif_rec.advocate_profile:
-        cases = db.query(AdvocateCaseReference).filter(
-            AdvocateCaseReference.advocate_profile_id == verif_rec.advocate_profile.id,
-            AdvocateCaseReference.verification_status == DetailedVerificationStatus.VERIFIED
-        ).all()
-        verified_cases_count = len(cases)
+    raw_enrollment = None
+    enrollment_year = None
+    reg_authority = "State Bar Council" if provider.provider_type == ProviderType.ADVOCATE else "Licensing Authority"
+    last_verified_str = None
+
+    if verif_rec:
+        if verif_rec.last_reviewed_at:
+            last_verified_str = verif_rec.last_reviewed_at.strftime("%Y-%m-%d")
+        elif verif_rec.updated_at:
+            last_verified_str = verif_rec.updated_at.strftime("%Y-%m-%d")
+
+        if verif_rec.advocate_profile:
+            adv_p = verif_rec.advocate_profile
+            if adv_p.state_bar_council:
+                reg_authority = adv_p.state_bar_council
+            if adv_p.enrollment_number:
+                raw_enrollment = adv_p.enrollment_number
+            if adv_p.enrollment_year:
+                enrollment_year = adv_p.enrollment_year
+
+            all_cases = db.query(AdvocateCaseReference).filter(
+                AdvocateCaseReference.advocate_profile_id == adv_p.id
+            ).all()
+            total_cases_count = len(all_cases)
+            verified_cases_count = len([c for c in all_cases if c.verification_status == DetailedVerificationStatus.VERIFIED])
+
+    # Fallback to generic fields if advocate profile record is missing
+    if not raw_enrollment:
+        gen_fields = _build_generic_fields_list(provider, db)
+        for f in gen_fields:
+            if f.field_name in ("registration_details", "enrollment_number"):
+                raw_enrollment = f.value
+            elif f.field_name == "bar_council":
+                reg_authority = f.value
+
+    if not last_verified_str and provider.verification_status == VerificationStatus.VERIFIED:
+        last_verified_str = provider.updated_at.strftime("%Y-%m-%d") if provider.updated_at else datetime.now().strftime("%Y-%m-%d")
+
+    practice_ev_status = "Not available"
+    if verified_cases_count > 0:
+        practice_ev_status = "Reviewed"
+    elif total_cases_count > 0:
+        practice_ev_status = "Not yet reviewed"
+
+    transparency_detail = VerificationTransparencyDetail(
+        professional_credential_verified=cred_verified,
+        profession=provider.provider_type.value.capitalize(),
+        registration_authority=reg_authority,
+        enrollment_number_masked=mask_enrollment_number(raw_enrollment),
+        enrollment_year=enrollment_year,
+        verification_status=provider.verification_status,
+        last_verified_date=last_verified_str,
+        practice_evidence_status=practice_ev_status,
+        practice_evidence_count=verified_cases_count,
+    )
 
     out = ProviderPublicOut.model_validate(provider)
     out.generic_fields = _build_generic_fields_list(provider, db)
     out.professional_credential_verified = cred_verified
     out.practice_evidence_reviewed = (verified_cases_count > 0)
     out.practice_evidence_count = verified_cases_count
+    out.verification_transparency = transparency_detail
     return out

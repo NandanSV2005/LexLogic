@@ -193,6 +193,18 @@ export interface ProviderFieldValue {
   value: string;
 }
 
+export interface VerificationTransparencyDetail {
+  professional_credential_verified: boolean;
+  profession: string;
+  registration_authority: string;
+  enrollment_number_masked?: string;
+  enrollment_year?: number;
+  verification_status: VerificationStatus;
+  last_verified_date?: string;
+  practice_evidence_status: string;
+  practice_evidence_count: number;
+}
+
 export interface Provider {
   id: number;
   user_id: number;
@@ -216,6 +228,10 @@ export interface Provider {
   updated_at?: string;
   field_values?: ProviderFieldValue[];
   generic_fields?: ProviderFieldValueDetail[];
+  professional_credential_verified?: boolean;
+  practice_evidence_reviewed?: boolean;
+  practice_evidence_count?: number;
+  verification_transparency?: VerificationTransparencyDetail;
 }
 
 export interface ProviderDashboardMetrics {

@@ -69,6 +69,21 @@ class ProviderProfileDetailOut(BaseModel):
     generic_fields: List[ProviderFieldValueDetail] = Field(default_factory=list)
 
 
+class VerificationTransparencyDetail(BaseModel):
+    """Structured, citizen-facing verification details with zero exposure of private documents or notes."""
+    model_config = ConfigDict(from_attributes=True)
+
+    professional_credential_verified: bool = Field(default=False, description="Primary professional credential status")
+    profession: str = Field(default="Advocate", description="Provider profession type name")
+    registration_authority: str = Field(default="State Bar Council", description="Licensing or registration authority")
+    enrollment_number_masked: Optional[str] = Field(default=None, description="Partially masked enrollment/registration ID")
+    enrollment_year: Optional[int] = Field(default=None, description="Enrollment year")
+    verification_status: VerificationStatus = Field(default=VerificationStatus.PENDING)
+    last_verified_date: Optional[str] = Field(default=None, description="Formatted date of last verification activity")
+    practice_evidence_status: str = Field(default="Not available", description="Practice evidence status: Reviewed | Not yet reviewed | Not available")
+    practice_evidence_count: int = Field(default=0, description="Count of verified practice case references")
+
+
 class ProviderPublicOut(BaseModel):
     """Publicly discoverable provider profile (hides sensitive user info, password hash, private documents, audit data)."""
     model_config = ConfigDict(from_attributes=True)
@@ -90,6 +105,9 @@ class ProviderPublicOut(BaseModel):
     professional_credential_verified: bool = Field(default=False, description="Whether primary professional credential is verified")
     practice_evidence_reviewed: bool = Field(default=False, description="Whether secondary practice evidence has been reviewed")
     practice_evidence_count: int = Field(default=0, description="Count of verified practice case references")
+
+    # Phase 6 Verification Transparency Section
+    verification_transparency: Optional[VerificationTransparencyDetail] = Field(default=None, description="Detailed public verification transparency breakdown")
 
 
 class ProviderVerificationSubmit(BaseModel):
