@@ -21,14 +21,22 @@ from app.services.provider_service import seed_default_provider_field_definition
 @pytest.fixture(autouse=True)
 def setup_database():
     """Reset and seed database before each test."""
+    import app.models  # noqa: F401
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
         seed_default_provider_field_definitions(db)
+        db.commit()
         yield db
     finally:
         db.close()
+
+
+@pytest.fixture
+def client():
+    with TestClient(app) as c:
+        yield c
 
 
 def create_test_users(db):
@@ -109,9 +117,9 @@ def create_test_users(db):
     }
 
 
-def test_rbac_admin_verification_boundaries(client):
+def test_rbac_admin_verification_boundaries(client, setup_database):
     """Test 1: Non-admin users (Citizens, Providers, Unauthenticated) receive 403 / 401 on admin verification routes."""
-    db = SessionLocal()
+    db = setup_database
     ctx = create_test_users(db)
     provider_id = ctx["provider"].id
     case_id = ctx["case_ref"].id
@@ -139,9 +147,9 @@ def test_rbac_admin_verification_boundaries(client):
     assert client.get(f"/api/providers/admin/{provider_id}/verification-details", headers=ctx["admin_headers"]).status_code == 200
 
 
-def test_admin_verification_queue_and_filters(client):
+def test_admin_verification_queue_and_filters(client, setup_database):
     """Test 2: Verification queue filtering by profession, verification status, and manual review required."""
-    db = SessionLocal()
+    db = setup_database
     ctx = create_test_users(db)
 
     # Fetch Queue
@@ -176,9 +184,9 @@ def test_admin_verification_queue_and_filters(client):
     assert len(res_ver.json()) == 0
 
 
-def test_mandatory_decision_notes_enforcement(client):
+def test_mandatory_decision_notes_enforcement(client, setup_database):
     """Test 3: Submitting an admin decision without notes/reasons returns 400 Bad Request."""
-    db = SessionLocal()
+    db = setup_database
     ctx = create_test_users(db)
     provider_id = ctx["provider"].id
     case_id = ctx["case_ref"].id
@@ -209,9 +217,9 @@ def test_mandatory_decision_notes_enforcement(client):
     assert res3.status_code == 400
 
 
-def test_execute_admin_credential_decision_lifecycle(client):
+def test_execute_admin_credential_decision_lifecycle(client, setup_database):
     """Test 4: Admin approves credential -> Overall & credential status updated to VERIFIED, history entry & audit log recorded."""
-    db = SessionLocal()
+    db = setup_database
     ctx = create_test_users(db)
     provider_id = ctx["provider"].id
 
@@ -243,9 +251,9 @@ def test_execute_admin_credential_decision_lifecycle(client):
     assert me_res.json()["verification_status"] == "VERIFIED"
 
 
-def test_admin_practice_evidence_review_lifecycle(client):
+def test_admin_practice_evidence_review_lifecycle(client, setup_database):
     """Test 5: Admin reviews practice evidence -> Updates case evidence status and records audit log & history."""
-    db = SessionLocal()
+    db = setup_database
     ctx = create_test_users(db)
     case_id = ctx["case_ref"].id
 

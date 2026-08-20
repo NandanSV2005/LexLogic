@@ -86,6 +86,11 @@ class ProviderPublicOut(BaseModel):
     completed_requests: int
     generic_fields: List[ProviderFieldValueDetail] = Field(default_factory=list)
 
+    # Phase 5 Public Verification Flags
+    professional_credential_verified: bool = Field(default=False, description="Whether primary professional credential is verified")
+    practice_evidence_reviewed: bool = Field(default=False, description="Whether secondary practice evidence has been reviewed")
+    practice_evidence_count: int = Field(default=0, description="Count of verified practice case references")
+
 
 class ProviderVerificationSubmit(BaseModel):
     notes: Optional[str] = Field(default=None, description="Optional submission notes or license numbers for verification review")

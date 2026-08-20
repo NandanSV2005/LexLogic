@@ -122,10 +122,12 @@ def login(
         metadata_json={"role": user.role.value}
     )
 
+    user_out = UserOut.model_validate(user)
+
     return Token(
         access_token=access_token,
         token_type="bearer",
-        user=user
+        user=user_out
     )
 
 
@@ -159,10 +161,12 @@ def login_form(
         custom_claims={"email": user.email, "role": user.role.value}
     )
 
+    user_out = UserOut.model_validate(user)
+
     return Token(
         access_token=access_token,
         token_type="bearer",
-        user=user
+        user=user_out
     )
 
 

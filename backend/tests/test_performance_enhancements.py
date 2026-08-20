@@ -54,6 +54,15 @@ def get_provider_auth(client):
         ]
     }, headers=headers)
 
+    # Approve provider verification for matching eligibility in tests
+    db = SessionLocal()
+    from app.models.provider import Provider, VerificationStatus
+    p = db.query(Provider).first()
+    if p:
+        p.verification_status = VerificationStatus.VERIFIED
+        db.commit()
+    db.close()
+
     return headers
 
 

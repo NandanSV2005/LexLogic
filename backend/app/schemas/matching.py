@@ -35,6 +35,11 @@ class MatchedProviderOut(BaseModel):
     match_score: Optional[float] = Field(default=None, description="Deterministic match score (omitted for ADVOCATE per regulatory rules)")
     is_advocate_factual_match: bool = Field(default=False, description="Flag indicating factual non-promotional advocate match")
 
+    # Phase 5 Factual Verification Info (Publicly safe)
+    professional_credential_verified: bool = Field(default=False, description="Whether primary professional credential is verified")
+    practice_evidence_reviewed: bool = Field(default=False, description="Whether secondary practice evidence has been reviewed")
+    practice_evidence_count: int = Field(default=0, description="Count of verified practice case references")
+
 
 class MatchResponse(BaseModel):
     request_id: int

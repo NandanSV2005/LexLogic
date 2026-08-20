@@ -12,6 +12,7 @@ import {
   UserCheck,
   ExternalLink,
   RefreshCw,
+  FileCheck,
 } from 'lucide-react';
 import { Navbar } from '../../components/layout/Navbar';
 import { Card } from '../../components/common/Card';
@@ -275,7 +276,7 @@ export const MatchingResultsPage: React.FC = () => {
                       </div>
 
                       {/* Provider Header */}
-                      <div className="mb-4">
+                      <div className="mb-3">
                         <h3 className="text-lg font-bold text-[#E6EFE8] flex items-center gap-2">
                           {provider.full_name}
                         </h3>
@@ -283,6 +284,20 @@ export const MatchingResultsPage: React.FC = () => {
                           <p className="text-xs text-[#A3B5A7] mt-1 line-clamp-2 leading-relaxed">
                             {provider.bio}
                           </p>
+                        )}
+                      </div>
+
+                      {/* Phase 5 Factual Verification Metadata Badges */}
+                      <div className="flex flex-wrap items-center gap-2 mb-4">
+                        {provider.professional_credential_verified !== false && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#7ECB98] bg-[#1B3B2B] border border-[#2D5E44] px-2.5 py-1 rounded-lg">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Professional credential verified
+                          </span>
+                        )}
+                        {provider.practice_evidence_reviewed && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#B3A7CF] bg-[#221C30] border border-[#3D3252] px-2.5 py-1 rounded-lg">
+                            <FileCheck className="w-3.5 h-3.5" /> Practice evidence reviewed ({provider.practice_evidence_count || 1} cases)
+                          </span>
                         )}
                       </div>
 

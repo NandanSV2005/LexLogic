@@ -92,11 +92,16 @@ def find_matching_providers(
     db: Session,
     min_score: float = 0.0
 ) -> List[Tuple[Provider, float]]:
-    """Filters eligible providers and calculates match scores for a service request."""
-    # Filter 1: Provider type match & non-UNAVAILABLE status
+    """Filters eligible providers and calculates match scores for a service request.
+
+    HARD SAFETY CONDITION (PHASE 5):
+    Only providers who have completed professional verification (verification_status == VERIFIED)
+    are eligible for citizen matching. Unverified or pending providers are strictly filtered out at backend.
+    """
     query = db.query(Provider).filter(
         Provider.provider_type == request.preferred_provider_type,
-        Provider.availability_status != AvailabilityStatus.UNAVAILABLE
+        Provider.availability_status != AvailabilityStatus.UNAVAILABLE,
+        Provider.verification_status == VerificationStatus.VERIFIED
     )
 
     providers = query.all()

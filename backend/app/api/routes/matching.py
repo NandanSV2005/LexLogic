@@ -14,6 +14,13 @@ from app.services.audit import log_audit
 router = APIRouter(prefix="/matching", tags=["Matching Engine"])
 
 
+from app.models.verification import (
+    ProviderVerificationRecord,
+    AdvocateCaseReference,
+    DetailedVerificationStatus,
+)
+
+
 def _build_generic_fields_list(provider: Provider, db: Session) -> List[ProviderFieldValueDetail]:
     """Helper function to construct generic fields list for matched provider."""
     definitions = db.query(ProviderFieldDefinition).filter(
@@ -71,6 +78,24 @@ def match_providers_for_request(
 
         is_advocate = (provider.provider_type == ProviderType.ADVOCATE)
 
+        # Calculate Phase 5 public verification metadata (no private documents or notes exposed)
+        verif_rec = db.query(ProviderVerificationRecord).filter(
+            ProviderVerificationRecord.provider_id == provider.id
+        ).first()
+
+        cred_verified = (
+            provider.verification_status.value == "VERIFIED" or
+            (verif_rec is not None and verif_rec.credential_status == DetailedVerificationStatus.VERIFIED)
+        )
+
+        verified_cases_count = 0
+        if verif_rec and verif_rec.advocate_profile:
+            cases = db.query(AdvocateCaseReference).filter(
+                AdvocateCaseReference.advocate_profile_id == verif_rec.advocate_profile.id,
+                AdvocateCaseReference.verification_status == DetailedVerificationStatus.VERIFIED
+            ).all()
+            verified_cases_count = len(cases)
+
         out_obj = MatchedProviderOut(
             provider_id=provider.id,
             provider_type=provider.provider_type,
@@ -85,6 +110,9 @@ def match_providers_for_request(
             # Regulatory compliance rule: For ADVOCATE, do not present promotional ranking scores
             match_score=None if is_advocate else raw_score,
             is_advocate_factual_match=is_advocate,
+            professional_credential_verified=cred_verified,
+            practice_evidence_reviewed=(verified_cases_count > 0),
+            practice_evidence_count=verified_cases_count,
         )
         output_providers.append(out_obj)
 

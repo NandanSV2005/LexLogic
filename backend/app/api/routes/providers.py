@@ -1243,6 +1243,26 @@ def get_public_provider_profile(
             detail="Provider not found"
         )
 
+    verif_rec = db.query(ProviderVerificationRecord).filter(
+        ProviderVerificationRecord.provider_id == provider.id
+    ).first()
+
+    cred_verified = (
+        provider.verification_status == VerificationStatus.VERIFIED or
+        (verif_rec is not None and verif_rec.credential_status == DetailedVerificationStatus.VERIFIED)
+    )
+
+    verified_cases_count = 0
+    if verif_rec and verif_rec.advocate_profile:
+        cases = db.query(AdvocateCaseReference).filter(
+            AdvocateCaseReference.advocate_profile_id == verif_rec.advocate_profile.id,
+            AdvocateCaseReference.verification_status == DetailedVerificationStatus.VERIFIED
+        ).all()
+        verified_cases_count = len(cases)
+
     out = ProviderPublicOut.model_validate(provider)
     out.generic_fields = _build_generic_fields_list(provider, db)
+    out.professional_credential_verified = cred_verified
+    out.practice_evidence_reviewed = (verified_cases_count > 0)
+    out.practice_evidence_count = verified_cases_count
     return out

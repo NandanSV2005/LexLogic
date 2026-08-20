@@ -163,6 +163,15 @@ def test_e2e_citizen_request_matching_completion_incentives(client, setup_databa
         "enrollment_year": 2010
     }, headers=adv_headers)
 
+    # Admin approves advocate verification (Phase 5 requirement for matching eligibility)
+    admin_u = User(email="admin_e2e@lexlogic.org", password_hash=get_password_hash("Pass123!"), role=UserRole.ADMIN)
+    db.add(admin_u)
+    db.commit()
+    admin_token = create_access_token(subject=admin_u.id, custom_claims={"email": admin_u.email, "role": "ADMIN"})
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    prov_id = client.get("/api/providers/me", headers=adv_headers).json()["id"]
+    client.put(f"/api/providers/{prov_id}/verify", json={"status": "VERIFIED", "notes": "Verified Bar license"}, headers=admin_headers)
+
     # 3 & 4. Citizen describes legal need & creates request
     req_res = client.post("/api/requests", json={
         "service_category": "Property dispute",

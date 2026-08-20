@@ -40,8 +40,8 @@ def test_provider_type_matching_filtering(client, setup_database):
     db.add_all([user_med, user_adv, user_cit])
     db.commit()
 
-    prov_med = Provider(user_id=user_med.id, provider_type=ProviderType.MEDIATOR, full_name="Mediator Sita", location="Delhi")
-    prov_adv = Provider(user_id=user_adv.id, provider_type=ProviderType.ADVOCATE, full_name="Advocate Ram", location="Delhi")
+    prov_med = Provider(user_id=user_med.id, provider_type=ProviderType.MEDIATOR, full_name="Mediator Sita", location="Delhi", verification_status=VerificationStatus.VERIFIED)
+    prov_adv = Provider(user_id=user_adv.id, provider_type=ProviderType.ADVOCATE, full_name="Advocate Ram", location="Delhi", verification_status=VerificationStatus.VERIFIED)
     db.add_all([prov_med, prov_adv])
     db.commit()
 
@@ -91,7 +91,7 @@ def test_location_and_service_category_matching(client, setup_database):
         provider_type=ProviderType.NOTARY,
         full_name="Notary Mumbai",
         location="Mumbai",
-        verification_status=VerificationStatus.PENDING,
+        verification_status=VerificationStatus.VERIFIED,
         reliability_score=40.0,
         experience_years=2
     )

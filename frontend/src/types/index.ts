@@ -297,6 +297,9 @@ export interface MatchedProviderOut {
   generic_fields?: ProviderFieldValueDetail[];
   match_score?: number | null;
   is_advocate_factual_match: boolean;
+  professional_credential_verified?: boolean;
+  practice_evidence_reviewed?: boolean;
+  practice_evidence_count?: number;
 }
 
 export interface MatchResponse {
