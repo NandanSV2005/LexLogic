@@ -424,6 +424,12 @@ def submit_advocate_verification(
             detail="Provider profile not found"
         )
 
+    if provider.verification_status == VerificationStatus.VERIFIED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot modify an already verified professional record. Contact admin for updates."
+        )
+
     verif_record = db.query(ProviderVerificationRecord).filter(ProviderVerificationRecord.provider_id == provider.id).first()
     if not verif_record:
         verif_record = ProviderVerificationRecord(provider_id=provider.id)
@@ -438,6 +444,14 @@ def submit_advocate_verification(
             provider_id=provider.id,
         )
         db.add(adv_profile)
+
+    if submit_in.credential_document_id is not None:
+        doc = db.query(Document).filter(Document.id == submit_in.credential_document_id).first()
+        if not doc or doc.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: Invalid or unowned credential document ID"
+            )
 
     adv_profile.full_legal_name = submit_in.full_legal_name or provider.full_name
     adv_profile.jurisdiction_city = submit_in.jurisdiction_city or provider.location
@@ -463,6 +477,13 @@ def submit_advocate_verification(
 
     has_case_references = len(submit_in.case_references) > 0
     for case_in in submit_in.case_references:
+        if case_in.supporting_document_id is not None:
+            doc = db.query(Document).filter(Document.id == case_in.supporting_document_id).first()
+            if not doc or doc.owner_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Access denied: Invalid or unowned supporting document ID '{case_in.supporting_document_id}'"
+                )
         case_ref = AdvocateCaseReference(
             advocate_profile_id=adv_profile.id,
             provider_id=provider.id,
@@ -627,6 +648,14 @@ def add_practice_evidence(
             detail=f"Case reference '{case_in.case_number}' for court '{case_in.court_name}' has already been submitted."
         )
 
+    if case_in.supporting_document_id is not None:
+        doc = db.query(Document).filter(Document.id == case_in.supporting_document_id).first()
+        if not doc or doc.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: Invalid or unowned supporting document ID '{case_in.supporting_document_id}'"
+            )
+
     case_ref = AdvocateCaseReference(
         advocate_profile_id=adv_profile.id,
         provider_id=provider.id,
@@ -703,6 +732,12 @@ def update_practice_evidence(
     if case_in.advocate_role is not None:
         case_ref.advocate_role = case_in.advocate_role.strip()
     if case_in.supporting_document_id is not None:
+        doc = db.query(Document).filter(Document.id == case_in.supporting_document_id).first()
+        if not doc or doc.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: Invalid or unowned supporting document ID '{case_in.supporting_document_id}'"
+            )
         case_ref.supporting_document_id = case_in.supporting_document_id
 
     case_ref.verification_status = DetailedVerificationStatus.SUBMITTED
