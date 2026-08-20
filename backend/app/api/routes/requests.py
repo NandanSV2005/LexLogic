@@ -132,6 +132,12 @@ def get_legal_aid_requests(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> List[ServiceRequestOut]:
+    if current_user.role not in (UserRole.PROVIDER, UserRole.ADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Providers and Admins can access legal-aid requests."
+        )
+
     requests = db.query(ServiceRequest).filter(
         ServiceRequest.legal_aid_interest == True
     ).order_by(ServiceRequest.created_at.desc()).all()
@@ -355,9 +361,24 @@ def update_request_status(
     if not req:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
 
-    # Verify authorization
-    if current_user.role == UserRole.CITIZEN and req.citizen_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to update this request")
+    # Verify authorization (Citizen owner, assigned provider, or Admin)
+    is_owner = (req.citizen_id == current_user.id)
+    is_admin = (current_user.role == UserRole.ADMIN)
+    is_assigned_provider = False
+
+    if current_user.role == UserRole.PROVIDER:
+        provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+        if provider:
+            interaction = db.query(RequestProvider).filter(
+                RequestProvider.request_id == req.id,
+                RequestProvider.provider_id == provider.id,
+                RequestProvider.status == InteractionStatus.ACCEPTED
+            ).first()
+            if interaction:
+                is_assigned_provider = True
+
+    if not (is_owner or is_admin or is_assigned_provider):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have permission to update this request status")
 
     req.status = status_in.status
     db.commit()
