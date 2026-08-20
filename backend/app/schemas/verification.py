@@ -115,3 +115,65 @@ class ProviderVerificationRecordOut(BaseModel):
     updated_at: datetime
     advocate_profile: Optional[AdvocateVerificationProfileOut] = None
     history_entries: List[ProviderVerificationHistoryOut] = Field(default_factory=list)
+
+
+class AdminVerificationQueueItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    provider_id: int
+    user_id: int
+    user_email: str
+    full_name: str
+    profession: str
+    overall_status: DetailedVerificationStatus
+    submitted_at: Optional[datetime] = None
+    credential_status: DetailedVerificationStatus
+    practice_evidence_status: DetailedVerificationStatus
+    last_activity_timestamp: Optional[datetime] = None
+    last_activity_notes: Optional[str] = None
+    last_reviewed_by_admin_id: Optional[int] = None
+
+
+class AdminVerificationDetailsOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    # IDENTITY
+    provider_id: int
+    user_id: int
+    user_email: str
+    full_name: str
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    bio: Optional[str] = None
+    experience_years: int
+    created_at: datetime
+
+    # PROFESSIONAL CREDENTIAL
+    profession: str
+    state_bar_council: Optional[str] = None
+    enrollment_number: Optional[str] = None
+    enrollment_year: Optional[int] = None
+    jurisdiction_state: Optional[str] = None
+    credential_type: Optional[CredentialType] = None
+    credential_document_id: Optional[int] = None
+    credential_document_filename: Optional[str] = None
+    credential_verification_status: DetailedVerificationStatus
+    credential_notes: Optional[str] = None
+
+    # PRACTICE EVIDENCE & OVERALL RECORD
+    overall_status: DetailedVerificationStatus
+    identity_status: DetailedVerificationStatus
+    credential_status: DetailedVerificationStatus
+    practice_status: DetailedVerificationStatus
+    last_reviewed_by_admin_id: Optional[int] = None
+    last_reviewed_at: Optional[datetime] = None
+    verification_notes: Optional[str] = None
+    case_references: List[AdvocateCaseReferenceOut] = Field(default_factory=list)
+    history_entries: List[ProviderVerificationHistoryOut] = Field(default_factory=list)
+
+
+class AdminDecisionInput(BaseModel):
+    action: str = Field(..., description="Action: APPROVE_CREDENTIAL, REJECT_CREDENTIAL, REQUEST_ADDITIONAL_INFO, MARK_MANUAL_REVIEW")
+    target_status: Optional[DetailedVerificationStatus] = Field(None, description="Optional target status override")
+    notes: str = Field(..., description="Mandatory admin decision reason note")
+

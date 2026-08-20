@@ -141,6 +141,52 @@ export interface ProviderVerificationRecord {
   history_entries: ProviderVerificationHistory[];
 }
 
+export interface AdminVerificationQueueItem {
+  provider_id: number;
+  user_id: number;
+  user_email: string;
+  full_name: string;
+  profession: string;
+  overall_status: DetailedVerificationStatus;
+  submitted_at?: string;
+  credential_status: DetailedVerificationStatus;
+  practice_evidence_status: DetailedVerificationStatus;
+  last_activity_timestamp?: string;
+  last_activity_notes?: string;
+  last_reviewed_by_admin_id?: number;
+}
+
+export interface AdminVerificationDetailsOut {
+  provider_id: number;
+  user_id: number;
+  user_email: string;
+  full_name: string;
+  phone?: string;
+  location?: string;
+  bio?: string;
+  experience_years: number;
+  created_at: string;
+  profession: string;
+  state_bar_council?: string;
+  enrollment_number?: string;
+  enrollment_year?: number;
+  jurisdiction_state?: string;
+  credential_type?: CredentialType;
+  credential_document_id?: number;
+  credential_document_filename?: string;
+  credential_verification_status: DetailedVerificationStatus;
+  credential_notes?: string;
+  overall_status: DetailedVerificationStatus;
+  identity_status: DetailedVerificationStatus;
+  credential_status: DetailedVerificationStatus;
+  practice_status: DetailedVerificationStatus;
+  last_reviewed_by_admin_id?: number;
+  last_reviewed_at?: string;
+  verification_notes?: string;
+  case_references: AdvocateCaseReference[];
+  history_entries: ProviderVerificationHistory[];
+}
+
 export interface ProviderFieldValue {
   field_name: string;
   field_label?: string;

@@ -27,6 +27,9 @@ from app.schemas.verification import (
     AdvocateVerificationProfileOut,
     ProviderVerificationHistoryOut,
     ProviderVerificationRecordOut,
+    AdminVerificationQueueItem,
+    AdminVerificationDetailsOut,
+    AdminDecisionInput,
 )
 
 __all__ = [

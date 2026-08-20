@@ -32,9 +32,13 @@ from app.schemas.verification import (
     AdvocateCaseReferenceUpdate,
     AdminCaseEvidenceReview,
     AdvocateVerificationSubmit,
+    ProviderVerificationHistoryOut,
     ProviderVerificationRecordOut,
     AdvocateVerificationProfileOut,
     AdvocateCaseReferenceOut,
+    AdminVerificationQueueItem,
+    AdminVerificationDetailsOut,
+    AdminDecisionInput,
 )
 from app.services.points_service import award_points
 
@@ -764,13 +768,19 @@ def admin_review_practice_evidence(
     admin_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ) -> AdvocateCaseReferenceOut:
+    if not review_in.notes or not review_in.notes.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Decision reason note is required for admin audit log"
+        )
+
     case_ref = db.query(AdvocateCaseReference).filter(AdvocateCaseReference.id == case_id).first()
     if not case_ref:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Practice evidence reference not found")
 
+    old_status = case_ref.verification_status.value if case_ref.verification_status else "NOT_STARTED"
     case_ref.verification_status = review_in.status
-    if review_in.notes:
-        case_ref.verification_notes = review_in.notes
+    case_ref.verification_notes = review_in.notes
     if review_in.evidence_source_reference:
         case_ref.evidence_source_reference = review_in.evidence_source_reference
     case_ref.verified_at = datetime.now(timezone.utc)
@@ -782,6 +792,21 @@ def admin_review_practice_evidence(
 
     db.commit()
     db.refresh(case_ref)
+
+    # Record Verification History entry
+    verif_rec = db.query(ProviderVerificationRecord).filter(ProviderVerificationRecord.provider_id == case_ref.provider_id).first()
+    if verif_rec:
+        history_entry = ProviderVerificationHistory(
+            verification_record_id=verif_rec.id,
+            provider_id=case_ref.provider_id,
+            actor_id=admin_user.id,
+            action=f"PRACTICE_EVIDENCE_{review_in.status.value}",
+            from_status=old_status,
+            to_status=review_in.status.value,
+            notes=review_in.notes,
+        )
+        db.add(history_entry)
+        db.commit()
 
     log_audit(
         db=db,
@@ -803,7 +828,7 @@ def admin_review_practice_evidence(
             action="CASE_EVIDENCE_APPROVED",
             resource_type="advocate_case_reference",
             resource_id=case_ref.id,
-            metadata_json={"provider_id": case_ref.provider_id}
+            metadata_json={"provider_id": case_ref.provider_id, "notes": review_in.notes}
         )
     elif review_in.status in (DetailedVerificationStatus.REJECTED, DetailedVerificationStatus.UNVERIFIED):
         log_audit(
@@ -812,10 +837,316 @@ def admin_review_practice_evidence(
             action="CASE_EVIDENCE_REJECTED",
             resource_type="advocate_case_reference",
             resource_id=case_ref.id,
-            metadata_json={"provider_id": case_ref.provider_id}
+            metadata_json={"provider_id": case_ref.provider_id, "notes": review_in.notes}
         )
 
     return AdvocateCaseReferenceOut.model_validate(case_ref)
+
+
+@router.get(
+    "/admin/verification-queue",
+    response_model=List[AdminVerificationQueueItem],
+    status_code=status.HTTP_200_OK,
+    summary="Admin provider verification center queue",
+    description="Returns filtered provider verification queue items with profession, submission date, credential status, and practice evidence status. RBAC protected (Admin only)."
+)
+def get_admin_verification_queue(
+    profession: Optional[ProviderType] = None,
+    verification_status: Optional[DetailedVerificationStatus] = None,
+    manual_review_only: Optional[bool] = False,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+) -> List[AdminVerificationQueueItem]:
+    query = db.query(Provider).join(User, Provider.user_id == User.id)
+
+    if profession:
+        query = query.filter(Provider.provider_type == profession)
+
+    providers = query.order_by(Provider.updated_at.desc()).all()
+    queue_items: List[AdminVerificationQueueItem] = []
+
+    for provider in providers:
+        verif_rec = db.query(ProviderVerificationRecord).filter(
+            ProviderVerificationRecord.provider_id == provider.id
+        ).first()
+
+        # Extract overall and detailed statuses
+        overall = verif_rec.overall_status if verif_rec else (
+            DetailedVerificationStatus.VERIFIED if provider.verification_status == VerificationStatus.VERIFIED
+            else (DetailedVerificationStatus.REJECTED if provider.verification_status == VerificationStatus.REJECTED
+            else DetailedVerificationStatus.SUBMITTED if provider.verification_status == VerificationStatus.SUBMITTED
+            else DetailedVerificationStatus.NOT_STARTED)
+        )
+
+        credential_st = verif_rec.credential_status if verif_rec else DetailedVerificationStatus.NOT_STARTED
+        practice_st = verif_rec.practice_status if verif_rec else DetailedVerificationStatus.NOT_STARTED
+
+        # Filter by verification_status
+        if verification_status and overall != verification_status:
+            continue
+
+        # Filter by manual_review_only
+        if manual_review_only and overall not in (
+            DetailedVerificationStatus.MANUAL_REVIEW,
+            DetailedVerificationStatus.AUTOMATED_REVIEW,
+            DetailedVerificationStatus.SUBMITTED,
+        ):
+            continue
+
+        # Filter by date range
+        submitted_at = verif_rec.created_at if verif_rec else provider.created_at
+        if date_from:
+            try:
+                dt_from = datetime.fromisoformat(date_from.replace("Z", "+00:00"))
+                if submitted_at < dt_from:
+                    continue
+            except ValueError:
+                pass
+
+        if date_to:
+            try:
+                dt_to = datetime.fromisoformat(date_to.replace("Z", "+00:00"))
+                if submitted_at > dt_to:
+                    continue
+            except ValueError:
+                pass
+
+        # Extract last activity
+        last_activity_ts = verif_rec.updated_at if verif_rec else provider.updated_at
+        last_activity_notes = verif_rec.verification_notes if verif_rec else None
+        last_admin_id = verif_rec.last_reviewed_by_admin_id if verif_rec else None
+
+        if verif_rec and verif_rec.history_entries:
+            latest_h = sorted(verif_rec.history_entries, key=lambda h: h.timestamp, reverse=True)[0]
+            last_activity_ts = latest_h.timestamp
+            last_activity_notes = f"{latest_h.action}: {latest_h.notes or ''}".strip()
+            if latest_h.actor_id:
+                last_admin_id = latest_h.actor_id
+
+        queue_items.append(
+            AdminVerificationQueueItem(
+                provider_id=provider.id,
+                user_id=provider.user_id,
+                user_email=provider.user.email if provider.user else "",
+                full_name=provider.full_name,
+                profession=provider.provider_type.value,
+                overall_status=overall,
+                submitted_at=submitted_at,
+                credential_status=credential_st,
+                practice_evidence_status=practice_st,
+                last_activity_timestamp=last_activity_ts,
+                last_activity_notes=last_activity_notes,
+                last_reviewed_by_admin_id=last_admin_id,
+            )
+        )
+
+    return queue_items
+
+
+@router.get(
+    "/admin/{provider_id}/verification-details",
+    response_model=AdminVerificationDetailsOut,
+    status_code=status.HTTP_200_OK,
+    summary="Get full provider verification details for admin review",
+    description="Returns identity, professional credentials, practice case evidence, and verification history. RBAC protected (Admin only)."
+)
+def get_admin_provider_verification_details(
+    provider_id: int,
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+) -> AdminVerificationDetailsOut:
+    provider = db.query(Provider).filter(Provider.id == provider_id).first()
+    if not provider:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
+
+    user = db.query(User).filter(User.id == provider.user_id).first()
+    verif_rec = db.query(ProviderVerificationRecord).filter(
+        ProviderVerificationRecord.provider_id == provider_id
+    ).first()
+
+    if not verif_rec:
+        verif_rec = ProviderVerificationRecord(
+            provider_id=provider_id,
+            overall_status=DetailedVerificationStatus.NOT_STARTED,
+            identity_status=DetailedVerificationStatus.NOT_STARTED,
+            credential_status=DetailedVerificationStatus.NOT_STARTED,
+            practice_status=DetailedVerificationStatus.NOT_STARTED,
+        )
+        db.add(verif_rec)
+        db.commit()
+        db.refresh(verif_rec)
+
+    adv_prof = db.query(AdvocateVerificationProfile).filter(
+        AdvocateVerificationProfile.verification_record_id == verif_rec.id
+    ).first()
+
+    doc_filename = None
+    if adv_prof and adv_prof.credential_document_id:
+        doc = db.query(Document).filter(Document.id == adv_prof.credential_document_id).first()
+        if doc:
+            doc_filename = doc.filename
+
+    case_refs: List[AdvocateCaseReferenceOut] = []
+    if adv_prof:
+        cases = db.query(AdvocateCaseReference).filter(
+            AdvocateCaseReference.advocate_profile_id == adv_prof.id
+        ).all()
+        case_refs = [AdvocateCaseReferenceOut.model_validate(c) for c in cases]
+
+    history = db.query(ProviderVerificationHistory).filter(
+        ProviderVerificationHistory.verification_record_id == verif_rec.id
+    ).order_by(ProviderVerificationHistory.timestamp.desc()).all()
+    history_outs = [ProviderVerificationHistoryOut.model_validate(h) for h in history]
+
+    return AdminVerificationDetailsOut(
+        provider_id=provider.id,
+        user_id=provider.user_id,
+        user_email=user.email if user else "",
+        full_name=provider.full_name,
+        phone=provider.phone,
+        location=provider.location,
+        bio=provider.bio,
+        experience_years=provider.experience_years,
+        created_at=provider.created_at,
+        profession=provider.provider_type.value,
+        state_bar_council=adv_prof.state_bar_council if adv_prof else None,
+        enrollment_number=adv_prof.enrollment_number if adv_prof else None,
+        enrollment_year=adv_prof.enrollment_year if adv_prof else None,
+        jurisdiction_state=adv_prof.jurisdiction_state if adv_prof else None,
+        credential_type=adv_prof.credential_type if adv_prof else None,
+        credential_document_id=adv_prof.credential_document_id if adv_prof else None,
+        credential_document_filename=doc_filename,
+        credential_verification_status=adv_prof.credential_verification_status if adv_prof else DetailedVerificationStatus.NOT_STARTED,
+        credential_notes=adv_prof.verification_notes if adv_prof else None,
+        overall_status=verif_rec.overall_status,
+        identity_status=verif_rec.identity_status,
+        credential_status=verif_rec.credential_status,
+        practice_status=verif_rec.practice_status,
+        last_reviewed_by_admin_id=verif_rec.last_reviewed_by_admin_id,
+        last_reviewed_at=verif_rec.last_reviewed_at,
+        verification_notes=verif_rec.verification_notes,
+        case_references=case_refs,
+        history_entries=history_outs,
+    )
+
+
+@router.post(
+    "/admin/{provider_id}/verification/decision",
+    response_model=AdminVerificationDetailsOut,
+    status_code=status.HTTP_200_OK,
+    summary="Execute admin verification decision with mandatory reason notes",
+    description="Admin approves credential, rejects credential, requests info, or marks manual review. Mandatory reason note required. RBAC protected (Admin only)."
+)
+def execute_admin_verification_decision(
+    provider_id: int,
+    decision_in: AdminDecisionInput,
+    admin_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+) -> AdminVerificationDetailsOut:
+    if not decision_in.notes or not decision_in.notes.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Decision reason note is required for admin audit log"
+        )
+
+    provider = db.query(Provider).filter(Provider.id == provider_id).first()
+    if not provider:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider profile not found")
+
+    verif_rec = db.query(ProviderVerificationRecord).filter(
+        ProviderVerificationRecord.provider_id == provider_id
+    ).first()
+    if not verif_rec:
+        verif_rec = ProviderVerificationRecord(
+            provider_id=provider_id,
+            overall_status=DetailedVerificationStatus.NOT_STARTED,
+            identity_status=DetailedVerificationStatus.NOT_STARTED,
+            credential_status=DetailedVerificationStatus.NOT_STARTED,
+            practice_status=DetailedVerificationStatus.NOT_STARTED,
+        )
+        db.add(verif_rec)
+        db.commit()
+        db.refresh(verif_rec)
+
+    old_status = verif_rec.overall_status.value
+    target_status = decision_in.target_status
+
+    act = decision_in.action.upper()
+    if act == "APPROVE_CREDENTIAL":
+        target_status = target_status or DetailedVerificationStatus.VERIFIED
+        verif_rec.overall_status = target_status
+        verif_rec.credential_status = DetailedVerificationStatus.VERIFIED
+        verif_rec.identity_status = DetailedVerificationStatus.VERIFIED
+        provider.verification_status = VerificationStatus.VERIFIED
+    elif act == "REJECT_CREDENTIAL":
+        target_status = target_status or DetailedVerificationStatus.REJECTED
+        verif_rec.overall_status = target_status
+        verif_rec.credential_status = DetailedVerificationStatus.REJECTED
+        provider.verification_status = VerificationStatus.REJECTED
+    elif act in ("REQUEST_ADDITIONAL_INFO", "NEEDS_REVIEW"):
+        target_status = target_status or DetailedVerificationStatus.MANUAL_REVIEW
+        verif_rec.overall_status = target_status
+        verif_rec.credential_status = DetailedVerificationStatus.MANUAL_REVIEW
+        provider.verification_status = VerificationStatus.PENDING
+    elif act in ("MARK_MANUAL_REVIEW", "MANUAL_REVIEW"):
+        target_status = target_status or DetailedVerificationStatus.MANUAL_REVIEW
+        verif_rec.overall_status = target_status
+        provider.verification_status = VerificationStatus.SUBMITTED
+    else:
+        target_status = target_status or DetailedVerificationStatus.MANUAL_REVIEW
+        verif_rec.overall_status = target_status
+
+    verif_rec.last_reviewed_by_admin_id = admin_user.id
+    verif_rec.last_reviewed_at = datetime.now(timezone.utc)
+    verif_rec.verification_notes = decision_in.notes
+
+    # Update AdvocateVerificationProfile if present
+    adv_prof = db.query(AdvocateVerificationProfile).filter(
+        AdvocateVerificationProfile.verification_record_id == verif_rec.id
+    ).first()
+    if adv_prof:
+        if act == "APPROVE_CREDENTIAL":
+            adv_prof.credential_verification_status = DetailedVerificationStatus.VERIFIED
+            adv_prof.credential_verified_at = datetime.now(timezone.utc)
+        elif act == "REJECT_CREDENTIAL":
+            adv_prof.credential_verification_status = DetailedVerificationStatus.REJECTED
+        adv_prof.verification_notes = decision_in.notes
+
+    db.commit()
+    db.refresh(verif_rec)
+    db.refresh(provider)
+
+    # Record Verification History Entry
+    history_entry = ProviderVerificationHistory(
+        verification_record_id=verif_rec.id,
+        provider_id=provider.id,
+        actor_id=admin_user.id,
+        action=act,
+        from_status=old_status,
+        to_status=target_status.value if target_status else "MANUAL_REVIEW",
+        notes=decision_in.notes,
+    )
+    db.add(history_entry)
+    db.commit()
+
+    calculate_profile_completion(provider, db)
+
+    log_audit(
+        db=db,
+        user_id=admin_user.id,
+        action=f"ADMIN_VERIFICATION_{act}",
+        resource_type="provider",
+        resource_id=provider.id,
+        metadata_json={
+            "action": act,
+            "target_status": target_status.value if target_status else "MANUAL_REVIEW",
+            "notes": decision_in.notes
+        }
+    )
+
+    return get_admin_provider_verification_details(provider_id, admin_user, db)
 
 
 @router.put(
@@ -823,7 +1154,7 @@ def admin_review_practice_evidence(
     response_model=ProviderProfileDetailOut,
     status_code=status.HTTP_200_OK,
     summary="Admin verification review decision",
-    description="Admin approves or rejects provider verification (SUBMITTED -> VERIFIED or REJECTED)."
+    description="Admin approves or rejects provider verification (SUBMITTED -> VERIFIED or REJECTED). Requires reason notes."
 )
 def admin_verify_provider(
     provider_id: int,
@@ -836,6 +1167,11 @@ def admin_verify_provider(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Verification decision must be VERIFIED or REJECTED"
         )
+    if not decision_in.notes or not decision_in.notes.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Decision reason note is required for admin audit log"
+        )
 
     provider = db.query(Provider).filter(Provider.id == provider_id).first()
     if not provider:
@@ -844,7 +1180,32 @@ def admin_verify_provider(
             detail="Provider profile not found"
         )
 
+    old_st = provider.verification_status.value
     provider.verification_status = decision_in.status
+
+    verif_rec = db.query(ProviderVerificationRecord).filter(
+        ProviderVerificationRecord.provider_id == provider_id
+    ).first()
+    if verif_rec:
+        verif_rec.overall_status = (
+            DetailedVerificationStatus.VERIFIED if decision_in.status == VerificationStatus.VERIFIED
+            else DetailedVerificationStatus.REJECTED
+        )
+        verif_rec.last_reviewed_by_admin_id = admin_user.id
+        verif_rec.last_reviewed_at = datetime.now(timezone.utc)
+        verif_rec.verification_notes = decision_in.notes
+
+        history_entry = ProviderVerificationHistory(
+            verification_record_id=verif_rec.id,
+            provider_id=provider.id,
+            actor_id=admin_user.id,
+            action=f"VERIFY_{decision_in.status.value}",
+            from_status=old_st,
+            to_status=decision_in.status.value,
+            notes=decision_in.notes,
+        )
+        db.add(history_entry)
+
     db.commit()
     db.refresh(provider)
 
