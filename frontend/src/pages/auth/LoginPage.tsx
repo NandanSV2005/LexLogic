@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Scale, Lock, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authApi, providersApi } from '../../api';
-import { UserRole } from '../../types';
+import { UserRole, ProviderType, DetailedVerificationStatus } from '../../types';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { ErrorState } from '../../components/common/ErrorState';
@@ -32,9 +32,26 @@ export const LoginPage: React.FC = () => {
       } else if (response.user.role === UserRole.PROVIDER) {
         try {
           const providerProfile = await providersApi.getMe();
-          if (!providerProfile.is_profile_complete) {
+          if (!providerProfile || !providerProfile.is_profile_complete) {
             navigate('/provider/onboarding');
             return;
+          }
+
+          if (providerProfile.provider_type === ProviderType.ADVOCATE) {
+            try {
+              const vRecord = await providersApi.getVerificationRecord();
+              if (
+                !vRecord ||
+                vRecord.overall_status === DetailedVerificationStatus.NOT_STARTED ||
+                !vRecord.advocate_profile?.enrollment_number
+              ) {
+                navigate('/provider/onboarding');
+                return;
+              }
+            } catch (vErr) {
+              navigate('/provider/onboarding');
+              return;
+            }
           }
         } catch (err) {
           navigate('/provider/onboarding');

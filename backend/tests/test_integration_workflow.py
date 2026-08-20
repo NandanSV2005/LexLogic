@@ -1,7 +1,6 @@
 import io
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
 from app.db.database import SessionLocal, init_db, engine
 from app.db.base import Base
 from app.core.security import get_password_hash, create_access_token
@@ -9,6 +8,8 @@ from app.models.user import User, UserRole
 from app.models.provider import Provider, ProviderType, VerificationStatus, AvailabilityStatus
 from app.models.request import ServiceRequest, RequestStatus
 from app.models.audit import AuditLog
+from app.models.verification import ProviderVerificationRecord, AdvocateVerificationProfile, AdvocateCaseReference, ProviderVerificationHistory
+from app.main import app
 from app.services.provider_service import seed_default_provider_field_definitions
 
 VALID_PDF_BYTES = b"%PDF-1.4 sample title deed content for e2e test..."
@@ -77,8 +78,19 @@ def test_e2e_provider_onboarding_and_dashboard_workflow(client, setup_database):
 
     assert update_res.status_code == 200
     updated_data = update_res.json()
-    assert updated_data["profile_completion_percentage"] == 100.0
-    assert updated_data["is_profile_complete"] is True
+    
+    # Submit Advocate Bar Verification (Completes Advocate Professional Registration check)
+    verif_res = client.post("/api/providers/verification/advocate/submit", json={
+        "state_bar_council": "Bar Council of Delhi",
+        "enrollment_number": "D/4321/2006",
+        "enrollment_year": 2006
+    }, headers=headers)
+    assert verif_res.status_code == 200
+
+    # Check me profile after verification submission
+    me_after = client.get("/api/providers/me", headers=headers)
+    assert me_after.json()["profile_completion_percentage"] == 100.0
+    assert me_after.json()["is_profile_complete"] is True
 
     # 7. Verify profile-completion & availability update points (+20 profile + 10 availability = 30 points)
     pts_res = client.get("/api/providers/me/points", headers=headers)
@@ -143,6 +155,12 @@ def test_e2e_citizen_request_matching_completion_incentives(client, setup_databa
             {"field_name": "practice_area", "value": "Property & Boundary Litigation"},
             {"field_name": "registration_details", "value": "D/9988/2010"}
         ]
+    }, headers=adv_headers)
+
+    client.post("/api/providers/verification/advocate/submit", json={
+        "state_bar_council": "Bar Council of Delhi",
+        "enrollment_number": "D/9988/2010",
+        "enrollment_year": 2010
     }, headers=adv_headers)
 
     # 3 & 4. Citizen describes legal need & creates request

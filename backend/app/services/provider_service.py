@@ -139,6 +139,15 @@ def calculate_profile_completion(provider: Provider, db: Session) -> float:
             if val.value and val.value.strip():
                 req_defs_filled += 1
 
+        # Check if AdvocateVerificationProfile satisfies registration_details if ProviderFieldValue was not set
+        if provider.provider_type == ProviderType.ADVOCATE and req_defs_filled < req_defs_total:
+            from app.models.verification import ProviderVerificationRecord, AdvocateVerificationProfile
+            verif_rec = db.query(ProviderVerificationRecord).filter(ProviderVerificationRecord.provider_id == provider.id).first()
+            if verif_rec:
+                adv_prof = db.query(AdvocateVerificationProfile).filter(AdvocateVerificationProfile.verification_record_id == verif_rec.id).first()
+                if adv_prof and adv_prof.enrollment_number and adv_prof.enrollment_number.strip():
+                    req_defs_filled = min(req_defs_total, req_defs_filled + 1)
+
     total_checks = base_total + req_defs_total
     total_filled = base_filled + req_defs_filled
 
