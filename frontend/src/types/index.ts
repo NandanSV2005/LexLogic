@@ -389,6 +389,8 @@ export interface DocumentShareItem {
 export interface DocumentItem {
   id: number;
   owner_id: number;
+  request_id?: number;
+  version_number?: number;
   title: string;
   filename: string;
   file_path?: string;

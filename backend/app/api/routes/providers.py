@@ -10,6 +10,7 @@ from app.models.provider import (
     Provider,
     ProviderType,
     VerificationStatus,
+    AvailabilityStatus,
     ProviderFieldDefinition,
     ProviderFieldValue,
 )
@@ -45,6 +46,7 @@ from app.services.points_service import award_points
 from app.schemas.provider import (
     ProviderProfileCreate,
     ProviderProfileUpdate,
+    ProviderAvailabilityUpdatePayload,
     ProviderProfileDetailOut,
     ProviderFieldValueInput,
     ProviderFieldValueDetail,
@@ -220,6 +222,49 @@ def update_my_provider_profile(
     out = ProviderProfileDetailOut.model_validate(provider)
     out.generic_fields = _build_generic_fields_list(provider, db)
     return out
+
+
+@router.put(
+    "/availability",
+    response_model=ProviderProfileDetailOut,
+    status_code=status.HTTP_200_OK,
+    summary="Update provider availability status",
+    description="Updates availability status (AVAILABLE, BUSY, UNAVAILABLE) for the authenticated provider with anti-farming protection."
+)
+def update_my_availability(
+    payload: ProviderAvailabilityUpdatePayload,
+    current_user: User = Depends(require_provider),
+    db: Session = Depends(get_db)
+) -> ProviderProfileDetailOut:
+    provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+    if not provider:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Provider profile not found"
+        )
+
+    provider.availability_status = payload.availability_status
+    if payload.availability_status == AvailabilityStatus.AVAILABLE:
+        # Enforces 24h anti-farming cooldown inside award_points
+        award_points(db, provider, PointAction.AVAILABILITY_ADDED)
+
+    db.commit()
+    db.refresh(provider)
+    calculate_reliability_score(provider)
+
+    log_audit(
+        db=db,
+        user_id=current_user.id,
+        action="PROVIDER_AVAILABILITY_UPDATE",
+        resource_type="provider",
+        resource_id=provider.id,
+        metadata_json={"availability_status": provider.availability_status.value}
+    )
+
+    out = ProviderProfileDetailOut.model_validate(provider)
+    out.generic_fields = _build_generic_fields_list(provider, db)
+    return out
+
 
 
 class ProviderGenericFieldsUpdatePayload(BaseModel):

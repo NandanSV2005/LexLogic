@@ -188,7 +188,7 @@ export const RequestDetailsPage: React.FC = () => {
       setUploadProgressMessage(`Uploading file ${i + 1} of ${pendingItems.length}: ${item.title}...`);
 
       try {
-        const doc = await documentsApi.uploadDocument(item.title, item.file);
+        const doc = await documentsApi.uploadDocument(item.title, item.file, request?.id);
         uploadedDocs.push(doc);
 
         await documentsApi.shareDocument(doc.id, providerId, sharePermission);

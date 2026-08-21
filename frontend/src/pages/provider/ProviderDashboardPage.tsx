@@ -528,10 +528,10 @@ export const ProviderDashboardPage: React.FC = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setSelectedCase(req)}
+                            onClick={() => navigate(`/provider/requests/${req.id}`)}
                             leftIcon={<Eye className="w-3.5 h-3.5" />}
                           >
-                            View Details
+                            View Workspace Details
                           </Button>
 
                           <Button
@@ -608,10 +608,10 @@ export const ProviderDashboardPage: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => setSelectedCase(req)}
+                          onClick={() => navigate(`/provider/requests/${req.id}`)}
                           leftIcon={<Eye className="w-3.5 h-3.5" />}
                         >
-                          View Details
+                          View Workspace Details
                         </Button>
                       </div>
                     </Card>

@@ -41,6 +41,11 @@ class ProviderProfileUpdate(BaseModel):
     field_values: Optional[List[ProviderFieldValueInput]] = Field(default_factory=list)
 
 
+class ProviderAvailabilityUpdatePayload(BaseModel):
+    availability_status: AvailabilityStatus
+
+
+
 
 class ProviderProfileDetailOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)

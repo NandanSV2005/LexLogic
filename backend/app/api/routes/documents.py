@@ -80,18 +80,12 @@ async def upload_document(
     db.commit()
     db.refresh(doc)
 
-    # Auto share with provider if specified or if connected to request
-    target_provider_id = share_with_provider_id
-    if not target_provider_id and request_id:
-        req = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
-        if req and req.accepted_provider_id:
-            target_provider_id = req.accepted_provider_id
-
-    if target_provider_id:
+    # Explicit share ONLY if share_with_provider_id is explicitly passed by citizen
+    if share_with_provider_id:
         perm_enum = DocumentSharePermission.VIEW_AND_DOWNLOAD if (permission and permission.upper() == "VIEW_AND_DOWNLOAD") else DocumentSharePermission.VIEW
         share = DocumentShare(
             document_id=doc.id,
-            shared_with_provider_id=target_provider_id,
+            shared_with_provider_id=share_with_provider_id,
             status=DocumentShareStatus.ACTIVE,
             permission=perm_enum,
         )
@@ -178,7 +172,7 @@ def get_my_documents(
     "/{document_id}",
     status_code=status.HTTP_200_OK,
     summary="Stream private document view or download with fine-grained permission authorization",
-    description="Serves document file stream after strict RBAC & permission authorization (VIEW vs VIEW_AND_DOWNLOAD)."
+    description="Serves document file stream after strict RBAC & explicit DocumentShare authorization."
 )
 def download_document(
     document_id: int,
@@ -209,25 +203,49 @@ def download_document(
     elif current_user.role == UserRole.ADMIN:
         is_authorized = True
 
-    # 3. Provider explicit share check
+    # 3. Provider explicit share check (Enforcing mandatory 7-step security algorithm)
     elif current_user.role == UserRole.PROVIDER:
         provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
-        if provider:
-            share = db.query(DocumentShare).filter(
-                DocumentShare.document_id == doc.id,
-                DocumentShare.shared_with_provider_id == provider.id
-            ).first()
+        if not provider:
+            reason = "provider_profile_missing"
+        else:
+            # Step 2: Verify provider is authorized for the case/request if bound to a request
+            is_case_connected = True
+            if doc.request_id:
+                is_case_connected = False
+                req = db.query(ServiceRequest).filter(ServiceRequest.id == doc.request_id).first()
+                if req:
+                    inter = db.query(RequestProvider).filter(
+                        RequestProvider.request_id == req.id,
+                        RequestProvider.provider_id == provider.id
+                    ).first()
+                    if req.accepted_provider_id == provider.id or inter:
+                        is_case_connected = True
 
-            if share:
-                if share.status == DocumentShareStatus.ACTIVE:
+            if not is_case_connected:
+                reason = "unrelated_provider"
+            else:
+                # Step 3: Look for an EXPLICIT DocumentShare for this provider/document
+                share = db.query(DocumentShare).filter(
+                    DocumentShare.document_id == doc.id,
+                    DocumentShare.shared_with_provider_id == provider.id
+                ).first()
+
+                # Step 4: If no share exists -> 403 Forbidden
+                if not share:
+                    reason = "not_shared"
+
+                # Step 5: If share is REVOKED -> 403 Forbidden (Case connection NEVER overrides revocation)
+                elif share.status == DocumentShareStatus.REVOKED:
+                    reason = "access_revoked"
+
+                # Step 6 & 7: If share is ACTIVE, check permission levels
+                elif share.status == DocumentShareStatus.ACTIVE:
                     if download and share.permission != DocumentSharePermission.VIEW_AND_DOWNLOAD:
                         reason = "download_permission_required"
                     else:
                         is_authorized = True
-                else:
-                    reason = "access_revoked"
-            else:
-                reason = "not_shared"
+
 
     if not is_authorized:
         log_audit(

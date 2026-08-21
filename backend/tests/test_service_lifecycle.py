@@ -132,6 +132,7 @@ def test_full_service_lifecycle_flow(setup_lifecycle_users):
         data={
             "title": "Property Deed Title",
             "request_id": str(request_id),
+            "share_with_provider_id": str(provider_id),
             "permission": "VIEW"
         },
         files={"file": ("deed.pdf", b"%PDF-1.4 test deed content", "application/pdf")}

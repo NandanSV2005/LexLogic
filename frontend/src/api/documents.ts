@@ -2,10 +2,25 @@ import { apiClient, API_BASE_URL } from './client';
 import { DocumentItem, DocumentShareItem, DocumentSharePermission, PrivacySummary } from '../types';
 
 export const documentsApi = {
-  uploadDocument: async (title: string, file: File): Promise<DocumentItem> => {
+  uploadDocument: async (
+    title: string,
+    file: File,
+    requestId?: number,
+    shareWithProviderId?: number,
+    permission?: string
+  ): Promise<DocumentItem> => {
     const formData = new FormData();
     formData.append('title', title);
     formData.append('file', file);
+    if (requestId) {
+      formData.append('request_id', requestId.toString());
+    }
+    if (shareWithProviderId) {
+      formData.append('share_with_provider_id', shareWithProviderId.toString());
+    }
+    if (permission) {
+      formData.append('permission', permission);
+    }
 
     const response = await apiClient.post<DocumentItem>('/api/documents', formData, {
       headers: {
