@@ -205,15 +205,31 @@ export const MatchingResultsPage: React.FC = () => {
         {/* EMPTY STATE */}
         {!isLoading && !errorMessage && matchData && matchData.matched_providers.length === 0 && (
           <div className="bg-[#233027] border border-[#2D3D32] rounded-2xl p-12 text-center max-w-xl mx-auto my-8 shadow-sm">
-            <div className="inline-flex items-center justify-center p-4 bg-[#1C261F] border border-[#2D3D32] rounded-2xl text-[#E89D9D] mb-4">
-              <AlertCircle className="w-8 h-8" />
-            </div>
-            <h3 className="text-lg font-bold text-[#E6EFE8]">
-              No suitable providers found for this request yet.
-            </h3>
-            <p className="text-xs text-[#A3B5A7] mt-2 mb-6 leading-relaxed">
-              We couldn't find matching verified providers for location "{requestDetails?.location}" or category "{requestDetails?.service_category}". Try modifying your location or submitting a new request.
-            </p>
+            {matchData.pending_verification_count && matchData.pending_verification_count > 0 ? (
+              <>
+                <div className="inline-flex items-center justify-center p-4 bg-[#1C261F] border border-[#8EA895] rounded-2xl text-[#8EA895] mb-4">
+                  <ShieldCheck className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-[#E6EFE8]">
+                  Matching Providers Awaiting Professional Verification
+                </h3>
+                <p className="text-xs text-[#A3B5A7] mt-2 mb-6 leading-relaxed">
+                  We identified <strong className="text-[#8EA895]">{matchData.pending_verification_count} registered legal provider(s)</strong> in <strong className="text-[#E6EFE8]">{requestDetails?.location}</strong> for <strong className="text-[#E6EFE8]">{requestDetails?.service_category}</strong>, but their State Bar Council credentials are currently under administrative review. Once verified, they will become available for citizen engagement.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="inline-flex items-center justify-center p-4 bg-[#1C261F] border border-[#2D3D32] rounded-2xl text-[#E89D9D] mb-4">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-[#E6EFE8]">
+                  No suitable providers found for this request yet.
+                </h3>
+                <p className="text-xs text-[#A3B5A7] mt-2 mb-6 leading-relaxed">
+                  We couldn't find matching verified providers for location "{requestDetails?.location}" or category "{requestDetails?.service_category}". Try modifying your location or submitting a new request.
+                </p>
+              </>
+            )}
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link to="/citizen/request/new">

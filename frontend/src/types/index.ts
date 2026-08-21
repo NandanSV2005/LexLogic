@@ -324,6 +324,8 @@ export interface MatchResponse {
   preferred_provider_type: ProviderType;
   total_matches: number;
   matched_providers: MatchedProviderOut[];
+  pending_verification_count?: number;
+  has_pending_matches?: boolean;
 }
 
 export interface MatchBreakdown {

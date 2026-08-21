@@ -47,3 +47,5 @@ class MatchResponse(BaseModel):
     preferred_provider_type: ProviderType
     total_matches: int
     matched_providers: List[MatchedProviderOut]
+    pending_verification_count: int = Field(default=0, description="Anonymized count of matching providers awaiting verification")
+    has_pending_matches: bool = Field(default=False, description="Flag indicating if matching providers exist under verification review")

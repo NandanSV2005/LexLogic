@@ -8,7 +8,7 @@ from app.models.provider import Provider, ProviderType, ProviderFieldDefinition,
 from app.models.request import ServiceRequest
 from app.schemas.provider import ProviderFieldValueDetail
 from app.schemas.matching import MatchQueryInput, MatchedProviderOut, MatchResponse
-from app.services.matching_service import find_matching_providers
+from app.services.matching_service import find_matching_providers, count_pending_matching_providers
 from app.services.audit import log_audit
 
 router = APIRouter(prefix="/matching", tags=["Matching Engine"])
@@ -71,6 +71,11 @@ def match_providers_for_request(
         min_score=query_in.min_match_score or 0.0
     )
 
+    pending_count = count_pending_matching_providers(
+        request=request,
+        db=db
+    )
+
     output_providers: List[MatchedProviderOut] = []
 
     for provider, raw_score in matched_tuples:
@@ -124,6 +129,7 @@ def match_providers_for_request(
         resource_id=request.id,
         metadata_json={
             "matched_count": len(output_providers),
+            "pending_count": pending_count,
             "preferred_type": request.preferred_provider_type.value
         }
     )
@@ -133,5 +139,7 @@ def match_providers_for_request(
         service_category=request.service_category,
         preferred_provider_type=request.preferred_provider_type,
         total_matches=len(output_providers),
-        matched_providers=output_providers
+        matched_providers=output_providers,
+        pending_verification_count=pending_count,
+        has_pending_matches=(pending_count > 0)
     )
