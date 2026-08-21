@@ -68,6 +68,7 @@ def test_provider_verification_record_creation(setup_database):
     assert verif_record.identity_status == DetailedVerificationStatus.VERIFIED
     assert verif_record.credential_status == DetailedVerificationStatus.SUBMITTED
     assert verif_record.practice_status == DetailedVerificationStatus.NOT_STARTED
+    assert provider.verification_record is not None
     assert provider.verification_record.id == verif_record.id
 
 
@@ -155,6 +156,7 @@ def test_advocate_verification_profile_and_case_references(setup_database):
     db.refresh(adv_profile)
     assert len(adv_profile.case_references) == 2
     assert adv_profile.enrollment_number == "KAR/1842/2016"
+    assert adv_profile.credential_document is not None
     assert adv_profile.credential_document.id == bar_cert.id
     assert adv_profile.case_references[0].case_number == "W.P.(C) 9912/2020"
 

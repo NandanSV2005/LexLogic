@@ -63,7 +63,7 @@ def create_request(
     db: Session = Depends(get_db)
 ) -> ServiceRequestOut:
     req = create_citizen_request(db, citizen_id=current_user.id, request_in=request_in)
-    return req
+    return ServiceRequestOut.model_validate(req)
 
 
 @router.get(
@@ -80,7 +80,7 @@ def get_my_requests(
     requests = db.query(ServiceRequest).filter(
         ServiceRequest.citizen_id == current_user.id
     ).order_by(ServiceRequest.created_at.desc()).all()
-    return requests
+    return [ServiceRequestOut.model_validate(r) for r in requests]
 
 
 @router.get(
@@ -116,7 +116,7 @@ def get_eligible_requests(
         ~ServiceRequest.id.in_(interacted_ids_query)
     ).order_by(ServiceRequest.created_at.desc()).all()
 
-    return requests
+    return [ServiceRequestOut.model_validate(r) for r in requests]
 
 
 @router.get(
@@ -140,7 +140,7 @@ def get_provider_my_cases(
         RequestProvider.provider_id == provider.id
     ).order_by(RequestProvider.created_at.desc()).all()
 
-    return requests
+    return [ServiceRequestOut.model_validate(r) for r in requests]
 
 
 @router.get(
@@ -163,7 +163,7 @@ def get_legal_aid_requests(
     requests = db.query(ServiceRequest).filter(
         ServiceRequest.legal_aid_interest == True
     ).order_by(ServiceRequest.created_at.desc()).all()
-    return requests
+    return [ServiceRequestOut.model_validate(r) for r in requests]
 
 
 @router.get(
@@ -184,25 +184,25 @@ def get_request_by_id(
 
     # 1. Citizen owner access allowed
     if req.citizen_id == current_user.id:
-        return req
+        return ServiceRequestOut.model_validate(req)
 
     # 2. Admin access allowed
     if current_user.role == UserRole.ADMIN:
-        return req
+        return ServiceRequestOut.model_validate(req)
 
     # 3. Provider access allowed if provider has responded/interacted OR request is OPEN & eligible
     if current_user.role == UserRole.PROVIDER:
         provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
         if provider:
             if req.status in (RequestStatus.OPEN, RequestStatus.CONTACTED) and req.preferred_provider_type == provider.provider_type:
-                return req
+                return ServiceRequestOut.model_validate(req)
 
             interaction = db.query(RequestProvider).filter(
                 RequestProvider.request_id == req.id,
                 RequestProvider.provider_id == provider.id
             ).first()
             if interaction:
-                return req
+                return ServiceRequestOut.model_validate(req)
 
     # Horizontal Privilege Escalation Protection
     raise HTTPException(
@@ -250,7 +250,7 @@ def respond_request(
         )
 
     interaction = respond_to_request(db, provider, req)
-    return interaction
+    return RequestProviderOut.model_validate(interaction)
 
 
 @router.post(
@@ -291,9 +291,10 @@ def request_completion(
         )
 
     if req.status == RequestStatus.COMPLETION_REQUESTED:
-        return req
+        return ServiceRequestOut.model_validate(req)
 
-    return request_completion_service(db, req, current_user.id)
+    comp_req = request_completion_service(db, req, current_user.id)
+    return ServiceRequestOut.model_validate(comp_req)
 
 
 @router.post(
@@ -319,7 +320,7 @@ def confirm_completion(
         )
 
     if req.status == RequestStatus.COMPLETED:
-        return req
+        return ServiceRequestOut.model_validate(req)
 
     if req.status not in (RequestStatus.IN_PROGRESS, RequestStatus.COMPLETION_REQUESTED):
         raise HTTPException(
@@ -327,7 +328,8 @@ def confirm_completion(
             detail=f"Cannot confirm completion for a request with status {req.status}"
         )
 
-    return complete_service_request(db, req)
+    completed_req = complete_service_request(db, req)
+    return ServiceRequestOut.model_validate(completed_req)
 
 
 @router.post(
@@ -350,20 +352,23 @@ def complete_request(
     provider = None
     if current_user.role == UserRole.PROVIDER:
         provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+        if not provider:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Provider profile not found")
         interaction = db.query(RequestProvider).filter(
             RequestProvider.request_id == req.id,
-            RequestProvider.provider_id == provider.id if provider else -1
+            RequestProvider.provider_id == provider.id
         ).first()
         if not interaction:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to complete this request")
 
         if req.status == RequestStatus.IN_PROGRESS:
-            return request_completion_service(db, req, current_user.id)
+            comp_req = request_completion_service(db, req, current_user.id)
+            return ServiceRequestOut.model_validate(comp_req)
     elif current_user.role == UserRole.CITIZEN and req.citizen_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to complete this request")
 
     completed_req = complete_service_request(db, req, provider)
-    return completed_req
+    return ServiceRequestOut.model_validate(completed_req)
 
 
 @router.put(
@@ -405,7 +410,7 @@ def update_request_status(
     req.status = status_in.status
     db.commit()
     db.refresh(req)
-    return req
+    return ServiceRequestOut.model_validate(req)
 
 
 @router.post(
@@ -436,7 +441,7 @@ def request_documents(
     db.commit()
     db.refresh(interaction)
 
-    return interaction
+    return RequestProviderOut.model_validate(interaction)
 
 
 @router.get(
@@ -513,7 +518,8 @@ def accept_provider(
     if not target_interaction:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider has not expressed interest in this request")
 
-    return accept_provider_service(db, req, target_interaction, current_user.id)
+    acc_req = accept_provider_service(db, req, target_interaction, current_user.id)
+    return ServiceRequestOut.model_validate(acc_req)
 
 
 @router.post(
@@ -573,7 +579,7 @@ def review_documents(
 
     db.commit()
     db.refresh(req)
-    return req
+    return ServiceRequestOut.model_validate(req)
 
 
 @router.post(
@@ -609,7 +615,7 @@ def mark_case_ready(
         actor_id=current_user.id,
     )
 
-    return req
+    return ServiceRequestOut.model_validate(req)
 
 
 @router.post(
@@ -648,7 +654,7 @@ def start_service(
     )
 
     db.refresh(req)
-    return req
+    return ServiceRequestOut.model_validate(req)
 
 
 @router.get(
@@ -825,7 +831,8 @@ def submit_completion(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
 
     req.completion_note = comp_in.completion_note.strip()
-    return request_completion_service(db, req, current_user.id)
+    comp_req = request_completion_service(db, req, current_user.id)
+    return ServiceRequestOut.model_validate(comp_req)
 
 
 @router.post(
@@ -862,7 +869,7 @@ def dispute_completion(
         actor_id=current_user.id,
     )
 
-    return req
+    return ServiceRequestOut.model_validate(req)
 
 
 @router.get(

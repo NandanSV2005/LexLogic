@@ -823,7 +823,7 @@ def admin_review_practice_evidence(
 
     if review_in.status == DetailedVerificationStatus.VERIFIED:
         case_ref.evidence_status = EvidenceStatus.VERIFIED
-    elif review_in.status in (DetailedVerificationStatus.REJECTED, DetailedVerificationStatus.UNVERIFIED):
+    elif review_in.status == DetailedVerificationStatus.REJECTED:
         case_ref.evidence_status = EvidenceStatus.REJECTED
 
     db.commit()
@@ -866,7 +866,7 @@ def admin_review_practice_evidence(
             resource_id=case_ref.id,
             metadata_json={"provider_id": case_ref.provider_id, "notes": review_in.notes}
         )
-    elif review_in.status in (DetailedVerificationStatus.REJECTED, DetailedVerificationStatus.UNVERIFIED):
+    elif review_in.status == DetailedVerificationStatus.REJECTED:
         log_audit(
             db=db,
             user_id=admin_user.id,

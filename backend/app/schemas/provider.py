@@ -75,7 +75,7 @@ class VerificationTransparencyDetail(BaseModel):
 
     professional_credential_verified: bool = Field(default=False, description="Primary professional credential status")
     profession: str = Field(default="Advocate", description="Provider profession type name")
-    registration_authority: str = Field(default="State Bar Council", description="Licensing or registration authority")
+    registration_authority: Optional[str] = Field(default="State Bar Council", description="Licensing or registration authority")
     enrollment_number_masked: Optional[str] = Field(default=None, description="Partially masked enrollment/registration ID")
     enrollment_year: Optional[int] = Field(default=None, description="Enrollment year")
     verification_status: VerificationStatus = Field(default=VerificationStatus.PENDING)

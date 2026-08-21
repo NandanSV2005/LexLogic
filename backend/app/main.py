@@ -36,7 +36,7 @@ app = FastAPI(
 )
 
 # Configure CORS for local development & specified origins
-cors_origins = [str(origin) for origin in settings.CORS_ORIGINS] if settings.CORS_ORIGINS else ["*"]
+cors_origins = list(settings.CORS_ORIGINS) if settings.CORS_ORIGINS else ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
