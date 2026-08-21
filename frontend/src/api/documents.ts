@@ -77,4 +77,15 @@ export const documentsApi = {
   getDocumentDownloadUrl: (documentId: number): string => {
     return `${API_BASE_URL}/api/documents/${documentId}?download=true`;
   },
+
+  fetchDocumentBlobUrl: async (documentId: number): Promise<string> => {
+    const response = await apiClient.get(`/api/documents/${documentId}?download=false`, {
+      responseType: 'blob',
+    });
+    const contentType = typeof response.headers['content-type'] === 'string' ? response.headers['content-type'] : 'application/pdf';
+    const blob = new Blob([response.data], {
+      type: contentType,
+    });
+    return URL.createObjectURL(blob);
+  },
 };

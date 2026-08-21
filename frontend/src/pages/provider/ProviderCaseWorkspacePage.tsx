@@ -60,6 +60,31 @@ export const ProviderCaseWorkspacePage: React.FC = () => {
 
   // Document Viewer Modal State
   const [viewingDoc, setViewingDoc] = useState<DocumentItem | null>(null);
+  const [viewingBlobUrl, setViewingBlobUrl] = useState<string | null>(null);
+  const [isFetchingBlob, setIsFetchingBlob] = useState<boolean>(false);
+
+  const handleOpenDocumentViewer = async (doc: DocumentItem) => {
+    setViewingDoc(doc);
+    setIsFetchingBlob(true);
+    setViewingBlobUrl(null);
+
+    try {
+      const blobUrl = await documentsApi.fetchDocumentBlobUrl(doc.id);
+      setViewingBlobUrl(blobUrl);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to stream document for secure preview.');
+    } finally {
+      setIsFetchingBlob(false);
+    }
+  };
+
+  const handleCloseDocumentViewer = () => {
+    if (viewingBlobUrl) {
+      URL.revokeObjectURL(viewingBlobUrl);
+    }
+    setViewingBlobUrl(null);
+    setViewingDoc(null);
+  };
 
   // Action Loading State
   const [isCompleting, setIsCompleting] = useState<boolean>(false);
@@ -367,7 +392,7 @@ export const ProviderCaseWorkspacePage: React.FC = () => {
                             <Button
                               variant="primary"
                               size="sm"
-                              onClick={() => setViewingDoc(doc)}
+                              onClick={() => handleOpenDocumentViewer(doc)}
                               leftIcon={<Eye className="w-3.5 h-3.5" />}
                             >
                               VIEW DOCUMENT
@@ -410,7 +435,7 @@ export const ProviderCaseWorkspacePage: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={() => setViewingDoc(null)}
+                  onClick={handleCloseDocumentViewer}
                   className="p-2 text-[#A3B5A7] hover:text-[#E6EFE8] rounded-lg bg-[#141C16] border border-[#2D3D32]"
                 >
                   <X className="w-5 h-5" />
@@ -419,18 +444,22 @@ export const ProviderCaseWorkspacePage: React.FC = () => {
 
               {/* EMBEDDED DOCUMENT VIEWING STREAM */}
               <div className="flex-1 bg-[#0D120E] p-4 overflow-auto min-h-[400px] flex items-center justify-center">
-                {viewingDoc.mime_type.includes('image') ? (
-                  <img
-                    src={documentsApi.getDocumentViewUrl(viewingDoc.id)}
-                    alt={viewingDoc.title}
-                    className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg border border-[#2D3D32]"
-                  />
-                ) : viewingDoc.mime_type.includes('pdf') ? (
-                  <iframe
-                    src={documentsApi.getDocumentViewUrl(viewingDoc.id)}
-                    title={viewingDoc.title}
-                    className="w-full h-[55vh] rounded-lg border border-[#2D3D32]"
-                  />
+                {isFetchingBlob ? (
+                  <LoadingState message="Fetching secure document stream..." />
+                ) : viewingBlobUrl ? (
+                  viewingDoc.mime_type.includes('image') ? (
+                    <img
+                      src={viewingBlobUrl}
+                      alt={viewingDoc.title}
+                      className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg border border-[#2D3D32]"
+                    />
+                  ) : (
+                    <iframe
+                      src={viewingBlobUrl}
+                      title={viewingDoc.title}
+                      className="w-full h-[55vh] rounded-lg border border-[#2D3D32]"
+                    />
+                  )
                 ) : (
                   <div className="text-center space-y-3 p-8 border border-[#2D3D32] rounded-xl bg-[#141C16]">
                     <FileCheck className="w-12 h-12 text-[#8EA895] mx-auto" />

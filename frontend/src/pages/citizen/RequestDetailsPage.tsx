@@ -267,28 +267,50 @@ export const RequestDetailsPage: React.FC = () => {
     );
   };
 
-  const getLifecycleStepNumber = (status: RequestStatus) => {
-    switch (status) {
+  const acceptedProvider = interestedProviders.find((p) => p.interaction_status === InteractionStatus.ACCEPTED);
+  const hasConnectedAdvocate = Boolean(
+    acceptedProvider ||
+    (request && (
+      request.status === RequestStatus.IN_PROGRESS ||
+      request.status === RequestStatus.DOCUMENTS_SUBMITTED ||
+      request.status === RequestStatus.DOCUMENTS_REVIEWED ||
+      request.status === RequestStatus.ADDITIONAL_INFORMATION_REQUIRED ||
+      request.status === RequestStatus.READY_FOR_SERVICE ||
+      request.status === RequestStatus.COMPLETION_REQUESTED ||
+      request.status === RequestStatus.COMPLETED
+    ))
+  );
+
+  const getLifecycleStepNumber = (reqStatus: RequestStatus, isConnected: boolean) => {
+    if (reqStatus === RequestStatus.COMPLETED) {
+      return 6;
+    }
+    if (reqStatus === RequestStatus.COMPLETION_REQUESTED || reqStatus === RequestStatus.COMPLETION_PENDING) {
+      return 5;
+    }
+    if (
+      isConnected ||
+      reqStatus === RequestStatus.IN_PROGRESS ||
+      reqStatus === RequestStatus.DOCUMENTS_SUBMITTED ||
+      reqStatus === RequestStatus.DOCUMENTS_REVIEWED ||
+      reqStatus === RequestStatus.ADDITIONAL_INFORMATION_REQUIRED ||
+      reqStatus === RequestStatus.READY_FOR_SERVICE
+    ) {
+      return 4;
+    }
+    switch (reqStatus) {
       case RequestStatus.OPEN:
-        return 1;
+        return interestedProviders.length > 0 ? 3 : 1;
       case RequestStatus.MATCHED:
         return 2;
       case RequestStatus.CONTACTED:
         return 3;
-      case RequestStatus.IN_PROGRESS:
-        return 4;
-      case RequestStatus.COMPLETION_REQUESTED:
-        return 5;
-      case RequestStatus.COMPLETED:
-        return 6;
       default:
         return 1;
     }
   };
 
-  const currentStep = request ? getLifecycleStepNumber(request.status) : 1;
-
-  const acceptedProvider = interestedProviders.find((p) => p.interaction_status === InteractionStatus.ACCEPTED);
+  const currentStep = request ? getLifecycleStepNumber(request.status, hasConnectedAdvocate) : 1;
 
   return (
     <div className="min-h-screen bg-[#141C16] text-[#E6EFE8] flex flex-col">
