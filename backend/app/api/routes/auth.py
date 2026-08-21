@@ -76,7 +76,7 @@ def register(
         metadata_json={"role": user.role.value, "email": user.email}
     )
 
-    return user
+    return UserOut.model_validate(user)
 
 
 @router.post(
@@ -180,4 +180,4 @@ def login_form(
 def get_me(
     current_user: User = Depends(get_current_active_user)
 ) -> UserOut:
-    return current_user
+    return UserOut.model_validate(current_user)
