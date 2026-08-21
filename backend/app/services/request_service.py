@@ -7,6 +7,7 @@ from app.schemas.request import ServiceRequestCreate
 from app.services.points_service import award_points
 from app.services.reliability_service import calculate_reliability_score
 from app.services.audit import log_audit
+from app.services.timeline_service import log_timeline_event
 
 
 def create_citizen_request(
@@ -29,6 +30,15 @@ def create_citizen_request(
     db.commit()
     db.refresh(req)
 
+    log_timeline_event(
+        db=db,
+        request_id=req.id,
+        event_type="LEGAL_REQUEST_SUBMITTED",
+        title="Legal request submitted",
+        description=f"Category: {req.service_category} in {req.location}",
+        actor_id=citizen_id,
+    )
+
     log_audit(
         db=db,
         user_id=citizen_id,
@@ -47,7 +57,6 @@ def respond_to_request(
     req: ServiceRequest
 ) -> RequestProvider:
     """Handles provider expressing interest/responding to an open request."""
-    # Look for existing interaction or create new
     interaction = db.query(RequestProvider).filter(
         RequestProvider.request_id == req.id,
         RequestProvider.provider_id == provider.id
@@ -64,19 +73,24 @@ def respond_to_request(
 
     interaction.status = InteractionStatus.CONTACTED
 
-    # Advance request status from OPEN to CONTACTED
     if req.status == RequestStatus.OPEN:
         req.status = RequestStatus.CONTACTED
 
     db.commit()
     db.refresh(interaction)
 
-    # Award points for responding (+10 points)
     award_points(db, provider, PointAction.REQUEST_RESPONDED, reference_id=req.id)
-
-    # Recalculate reliability score
     calculate_reliability_score(provider)
     db.commit()
+
+    log_timeline_event(
+        db=db,
+        request_id=req.id,
+        event_type="PROVIDER_EXPRESSED_INTEREST",
+        title=f"Provider {provider.full_name} expressed interest",
+        description=f"Profession: {provider.provider_type.value}",
+        actor_id=provider.user_id,
+    )
 
     log_audit(
         db=db,
@@ -102,7 +116,6 @@ def accept_provider_service(
     target_interaction.status = InteractionStatus.ACCEPTED
     req.status = RequestStatus.IN_PROGRESS
 
-    # Decline all other provider interactions for this request (Single Active Provider constraint)
     other_interactions = db.query(RequestProvider).filter(
         RequestProvider.request_id == req.id,
         RequestProvider.id != target_interaction.id
@@ -113,6 +126,16 @@ def accept_provider_service(
 
     db.commit()
     db.refresh(req)
+
+    p_name = target_interaction.provider.full_name if target_interaction.provider else "Provider"
+    log_timeline_event(
+        db=db,
+        request_id=req.id,
+        event_type="PROVIDER_SELECTED",
+        title=f"Provider selected: {p_name}",
+        description="Citizen accepted provider representation",
+        actor_id=citizen_user_id,
+    )
 
     log_audit(
         db=db,
@@ -131,10 +154,19 @@ def request_completion_service(
     req: ServiceRequest,
     provider_user_id: int
 ) -> ServiceRequest:
-    """Provider requests service completion. Advances status from IN_PROGRESS to COMPLETION_REQUESTED."""
-    req.status = RequestStatus.COMPLETION_REQUESTED
+    """Provider requests service completion. Advances status to COMPLETION_PENDING."""
+    req.status = RequestStatus.COMPLETION_PENDING
     db.commit()
     db.refresh(req)
+
+    log_timeline_event(
+        db=db,
+        request_id=req.id,
+        event_type="COMPLETION_SUBMITTED",
+        title="Completion submitted",
+        description=f"Note: {req.completion_note or 'Provider marked service as completed'}",
+        actor_id=provider_user_id,
+    )
 
     log_audit(
         db=db,
@@ -142,7 +174,7 @@ def request_completion_service(
         action="PROVIDER_REQUEST_COMPLETION",
         resource_type="service_request",
         resource_id=req.id,
-        metadata_json={"status": RequestStatus.COMPLETION_REQUESTED.value}
+        metadata_json={"status": RequestStatus.COMPLETION_PENDING.value}
     )
 
     return req
@@ -166,19 +198,24 @@ def complete_service_request(
 
     if provider:
         provider.completed_requests += 1
-
-        # Award standard completion reward (+20 points)
         award_points(db, provider, PointAction.SERVICE_COMPLETED, reference_id=req.id)
 
-        # If flagged for legal aid interest, award pro-bono incentive (+30 points)
         if req.legal_aid_interest:
             award_points(db, provider, PointAction.PRO_BONO_COMPLETED, reference_id=req.id)
 
-        # Recalculate provider reliability score
         calculate_reliability_score(provider)
 
     db.commit()
     db.refresh(req)
+
+    log_timeline_event(
+        db=db,
+        request_id=req.id,
+        event_type="CITIZEN_CONFIRMATION",
+        title="Citizen confirmation",
+        description="Case completed successfully",
+        actor_id=req.citizen_id,
+    )
 
     log_audit(
         db=db,

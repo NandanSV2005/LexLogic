@@ -112,6 +112,8 @@ def login(
         custom_claims={"email": user.email, "role": user.role.value}
     )
 
+    user_out = UserOut.model_validate(user)
+
     # Audit log event
     log_audit(
         db=db,
@@ -121,8 +123,6 @@ def login(
         resource_id=user.id,
         metadata_json={"role": user.role.value}
     )
-
-    user_out = UserOut.model_validate(user)
 
     return Token(
         access_token=access_token,

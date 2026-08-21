@@ -16,9 +16,11 @@ from app.schemas.document import (
     PrivacySummaryOut,
     DocumentPrivacyItemOut,
 )
+from app.models.request import ServiceRequest, RequestStatus, RequestProvider
 from app.services.document_storage import validate_and_save_upload_file
 from app.core.rate_limiter import check_upload_rate_limit
 from app.services.audit import log_audit
+from app.services.timeline_service import log_timeline_event
 
 router = APIRouter(prefix="/documents", tags=["Secure Private Documents"])
 
@@ -42,16 +44,31 @@ router = APIRouter(prefix="/documents", tags=["Secure Private Documents"])
 async def upload_document(
     file: UploadFile = File(...),
     title: Optional[str] = Form(None),
+    request_id: Optional[int] = Form(None),
+    parent_document_id: Optional[int] = Form(None),
+    share_with_provider_id: Optional[int] = Form(None),
+    permission: Optional[str] = Form("VIEW"),
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> Document:
     content = await file.read()
     storage_path, sanitized_filename, file_size, mime_type = validate_and_save_upload_file(file, content)
 
+    version_num = 1
+    if parent_document_id is not None:
+        parent_doc = db.query(Document).filter(Document.id == parent_document_id).first()
+        if parent_doc and parent_doc.owner_id == current_user.id:
+            version_num = parent_doc.version_number + 1
+            if not request_id:
+                request_id = parent_doc.request_id
+
     doc_title = title or sanitized_filename
 
     doc = Document(
         owner_id=current_user.id,
+        request_id=request_id,
+        parent_document_id=parent_document_id,
+        version_number=version_num,
         title=doc_title,
         filename=sanitized_filename,
         file_path=storage_path,
@@ -63,13 +80,49 @@ async def upload_document(
     db.commit()
     db.refresh(doc)
 
+    # Auto share with provider if specified or if connected to request
+    target_provider_id = share_with_provider_id
+    if not target_provider_id and request_id:
+        req = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+        if req and req.accepted_provider_id:
+            target_provider_id = req.accepted_provider_id
+
+    if target_provider_id:
+        perm_enum = DocumentSharePermission.VIEW_AND_DOWNLOAD if (permission and permission.upper() == "VIEW_AND_DOWNLOAD") else DocumentSharePermission.VIEW
+        share = DocumentShare(
+            document_id=doc.id,
+            shared_with_provider_id=target_provider_id,
+            status=DocumentShareStatus.ACTIVE,
+            permission=perm_enum,
+        )
+        doc.visibility = DocumentVisibility.SHARED
+        db.add(share)
+        db.commit()
+        db.refresh(doc)
+
+    # Advance request status to DOCUMENTS_SUBMITTED if bound to request
+    if request_id:
+        req = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+        if req and req.status in (RequestStatus.CONTACTED, RequestStatus.OPEN, RequestStatus.ADDITIONAL_INFORMATION_REQUIRED, RequestStatus.DOCUMENTS_SUBMITTED):
+            req.status = RequestStatus.DOCUMENTS_SUBMITTED
+            db.commit()
+
+        log_timeline_event(
+            db=db,
+            request_id=request_id,
+            event_type="DOCUMENT_UPLOADED",
+            title=f"Document uploaded: {doc.title} (v{version_num})",
+            description=f"File: {sanitized_filename}",
+            actor_id=current_user.id,
+        )
+
     log_audit(
         db=db,
         user_id=current_user.id,
         action="DOCUMENT_UPLOAD",
         resource_type="document",
         resource_id=doc.id,
-        metadata_json={"file_size": file_size, "mime_type": mime_type}
+        metadata_json={"file_size": file_size, "mime_type": mime_type, "version": version_num}
     )
 
     return doc
@@ -451,3 +504,103 @@ def analyze_document(
     db.refresh(doc)
 
     return result
+
+
+@router.get(
+    "/request/{request_id}",
+    response_model=List[DocumentOut],
+    status_code=status.HTTP_200_OK,
+    summary="Get documents associated with a service request",
+    description="Returns documents attached to a service request. Access authorized for citizen owner, assigned provider, or admin."
+)
+def get_request_documents(
+    request_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> List[DocumentOut]:
+    req = db.query(ServiceRequest).filter(ServiceRequest.id == request_id).first()
+    if not req:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service request not found")
+
+    is_owner = (req.citizen_id == current_user.id)
+    is_admin = (current_user.role == UserRole.ADMIN)
+    is_authorized_provider = False
+    provider = None
+
+    if current_user.role == UserRole.PROVIDER:
+        provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+        if provider:
+            inter = db.query(RequestProvider).filter(
+                RequestProvider.request_id == req.id,
+                RequestProvider.provider_id == provider.id
+            ).first()
+            if inter:
+                is_authorized_provider = True
+
+    if not (is_owner or is_admin or is_authorized_provider):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not have access to documents for this request")
+
+    docs = db.query(Document).filter(
+        Document.request_id == request_id
+    ).order_by(Document.created_at.desc()).all()
+
+    res = []
+    for doc in docs:
+        out = DocumentOut.model_validate(doc)
+        if doc.owner_id == current_user.id:
+            out.shares = [DocumentShareOut.model_validate(s) for s in doc.shares]
+        elif provider:
+            share = db.query(DocumentShare).filter(
+                DocumentShare.document_id == doc.id,
+                DocumentShare.shared_with_provider_id == provider.id
+            ).first()
+            if share and share.status == DocumentShareStatus.ACTIVE:
+                out.current_user_permission = share.permission
+        res.append(out)
+
+    return res
+
+
+@router.get(
+    "/{document_id}/versions",
+    response_model=List[DocumentOut],
+    status_code=status.HTTP_200_OK,
+    summary="Get all version history for a document",
+    description="Returns version history (parent and descendant versions) for a document."
+)
+def get_document_versions(
+    document_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> List[DocumentOut]:
+    doc = db.query(Document).filter(Document.id == document_id).first()
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    root_id = doc.parent_document_id or doc.id
+
+    versions = db.query(Document).filter(
+        (Document.id == root_id) | (Document.parent_document_id == root_id)
+    ).order_by(Document.version_number.desc()).all()
+
+    provider = None
+    if current_user.role == UserRole.PROVIDER:
+        provider = db.query(Provider).filter(Provider.user_id == current_user.id).first()
+
+    res = []
+    for d in versions:
+        if d.owner_id == current_user.id or current_user.role == UserRole.ADMIN:
+            out = DocumentOut.model_validate(d)
+            res.append(out)
+        elif provider:
+            share = db.query(DocumentShare).filter(
+                DocumentShare.document_id == d.id,
+                DocumentShare.shared_with_provider_id == provider.id,
+                DocumentShare.status == DocumentShareStatus.ACTIVE
+            ).first()
+            if share:
+                out = DocumentOut.model_validate(d)
+                out.current_user_permission = share.permission
+                res.append(out)
+
+    return res

@@ -8,13 +8,25 @@ from app.models.provider import (
     ProviderFieldDefinition,
     ProviderFieldValue,
 )
-from app.models.request import ServiceRequest, RequestStatus, RequestProvider, InteractionStatus, RequestUrgency
-
-from app.models.document import Document, DocumentVisibility, DocumentShare, DocumentShareStatus
+from app.models.request import (
+    ServiceRequest,
+    RequestStatus,
+    RequestProvider,
+    InteractionStatus,
+    RequestUrgency,
+    CaseTimelineEvent,
+    CaseMilestone,
+    CaseUpdate,
+)
+from app.models.document import Document, DocumentVisibility, DocumentShare, DocumentShareStatus, DocumentSharePermission
 from app.models.audit import AuditLog
 from app.models.points import PointTransaction, PointAction
-from app.models.appointment import Appointment, AppointmentStatus
-
+from app.models.appointment import (
+    Appointment,
+    AppointmentStatus,
+    ProviderAvailabilitySchedule,
+    ProviderBlockedDate,
+)
 from app.models.verification import (
     DetailedVerificationStatus,
     CredentialType,
@@ -46,13 +58,19 @@ __all__ = [
     "RequestStatus",
     "RequestProvider",
     "InteractionStatus",
+    "CaseTimelineEvent",
+    "CaseMilestone",
+    "CaseUpdate",
     "Document",
     "DocumentVisibility",
     "DocumentShare",
     "DocumentShareStatus",
+    "DocumentSharePermission",
     "AuditLog",
     "PointTransaction",
     "PointAction",
     "Appointment",
     "AppointmentStatus",
+    "ProviderAvailabilitySchedule",
+    "ProviderBlockedDate",
 ]

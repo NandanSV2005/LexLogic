@@ -25,11 +25,15 @@ class DocumentOut(BaseModel):
 
     id: int
     owner_id: int
+    request_id: Optional[int] = None
+    parent_document_id: Optional[int] = None
+    version_number: int = 1
     title: str
     filename: str
     file_size_bytes: int
     mime_type: str
     visibility: DocumentVisibility
+    request_note: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     shares: Optional[List[DocumentShareOut]] = None

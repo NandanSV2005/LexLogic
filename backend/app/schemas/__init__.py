@@ -14,7 +14,19 @@ from app.schemas.provider import (
 )
 from app.schemas.points import PointTransactionOut, PointsSummaryOut
 from app.schemas.citizen import CitizenProfileOut
-from app.schemas.request import ServiceRequestCreate, ServiceRequestOut, RequestProviderOut
+from app.schemas.request import (
+    ServiceRequestCreate,
+    ServiceRequestOut,
+    RequestProviderOut,
+    CaseTimelineEventOut,
+    CaseMilestoneOut,
+    CaseMilestoneUpdateInput,
+    CaseUpdateInput,
+    CaseUpdateOut,
+    CaseCompletionNoteInput,
+    CaseDisputeInput,
+    CaseSummaryOut,
+)
 from app.schemas.matching import MatchQueryInput, MatchedProviderOut, MatchResponse
 from app.schemas.document import DocumentOut, DocumentShareCreate, DocumentShareRevoke, DocumentShareOut
 from app.schemas.audit import AuditLogOut
@@ -30,6 +42,17 @@ from app.schemas.verification import (
     AdminVerificationQueueItem,
     AdminVerificationDetailsOut,
     AdminDecisionInput,
+)
+from app.schemas.appointment import (
+    AppointmentCreate,
+    AppointmentOut,
+    AppointmentDeclineInput,
+    ScheduleSlotInput,
+    ProviderAvailabilityScheduleInput,
+    ProviderScheduleSlotOut,
+    ProviderBlockedDateInput,
+    ProviderBlockedDateOut,
+    AvailableSlotsOut,
 )
 
 __all__ = [
@@ -55,6 +78,14 @@ __all__ = [
     "ServiceRequestCreate",
     "ServiceRequestOut",
     "RequestProviderOut",
+    "CaseTimelineEventOut",
+    "CaseMilestoneOut",
+    "CaseMilestoneUpdateInput",
+    "CaseUpdateInput",
+    "CaseUpdateOut",
+    "CaseCompletionNoteInput",
+    "CaseDisputeInput",
+    "CaseSummaryOut",
     "MatchQueryInput",
     "MatchedProviderOut",
     "MatchResponse",
@@ -69,4 +100,13 @@ __all__ = [
     "AdvocateVerificationProfileOut",
     "ProviderVerificationHistoryOut",
     "ProviderVerificationRecordOut",
+    "AppointmentCreate",
+    "AppointmentOut",
+    "AppointmentDeclineInput",
+    "ScheduleSlotInput",
+    "ProviderAvailabilityScheduleInput",
+    "ProviderScheduleSlotOut",
+    "ProviderBlockedDateInput",
+    "ProviderBlockedDateOut",
+    "AvailableSlotsOut",
 ]

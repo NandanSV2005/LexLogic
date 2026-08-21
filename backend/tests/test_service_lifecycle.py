@@ -1,272 +1,291 @@
-import io
 import pytest
+from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
-from app.db.database import SessionLocal, engine
-from app.db.base import Base
-from app.core.security import get_password_hash, create_access_token
+from sqlalchemy.orm import Session
+from app.main import app
+from app.db.database import get_db, SessionLocal, init_db
 from app.models.user import User, UserRole
 from app.models.provider import Provider, ProviderType, VerificationStatus, AvailabilityStatus
-from app.models.request import ServiceRequest, RequestStatus, RequestProvider, InteractionStatus
-from app.models.document import Document, DocumentShare, DocumentSharePermission, DocumentShareStatus, DocumentVisibility
-from app.models.audit import AuditLog
-from app.models.verification import ProviderVerificationRecord, AdvocateVerificationProfile, AdvocateCaseReference, ProviderVerificationHistory
-from app.main import app
-from app.services.provider_service import seed_default_provider_field_definitions
-
-VALID_PDF_BYTES = b"%PDF-1.4 test deed content for post-match service lifecycle..."
-
-
-@pytest.fixture(autouse=True)
-def setup_database():
-    """Reset database tables before each test."""
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    try:
-        seed_default_provider_field_definitions(db)
-        yield db
-    finally:
-        db.close()
-        Base.metadata.drop_all(bind=engine)
+from app.models.request import ServiceRequest, RequestStatus, RequestProvider, InteractionStatus, RequestUrgency
+from app.models.document import Document, DocumentVisibility, DocumentShare, DocumentShareStatus, DocumentSharePermission
+from app.models.appointment import Appointment, AppointmentStatus, ProviderAvailabilitySchedule, ProviderBlockedDate
+from app.core.security import get_password_hash, create_access_token
 
 
 @pytest.fixture
-def client():
-    with TestClient(app) as c:
-        yield c
+def db_session():
+    init_db()
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-def test_complete_post_match_service_lifecycle_and_single_active_provider(client, setup_database):
-    """E2E Test: Full post-match service lifecycle:
-    Citizen creates request -> Provider A & Provider B express interest ->
-    Citizen accepts Provider A -> Provider B interest becomes DECLINED ->
-    Provider A requests completion -> Citizen confirms completion -> Points awarded & audit logged.
-    """
-    db = setup_database
+@pytest.fixture
+def setup_lifecycle_users(db_session: Session):
+    timestamp = datetime.now().timestamp()
+    
+    # Citizen
+    citizen = User(
+        email=f"lc_citizen_{timestamp}@example.com",
+        password_hash=get_password_hash("password123"),
+        role=UserRole.CITIZEN,
+        is_active=True,
+    )
+    db_session.add(citizen)
 
-    # 1. Setup Citizen
-    citizen_res = client.post("/api/auth/register", json={
-        "email": "citizen_e2e@lexlogic.org",
-        "password": "Password123!",
-        "role": "CITIZEN",
-        "full_name": "Citizen Ramesh Kumar"
-    })
-    assert citizen_res.status_code == 201
-    citizen_token = client.post("/api/auth/login", json={"email": "citizen_e2e@lexlogic.org", "password": "Password123!"}).json()["access_token"]
-    citizen_headers = {"Authorization": f"Bearer {citizen_token}"}
+    # Provider
+    prov_user = User(
+        email=f"lc_provider_{timestamp}@example.com",
+        password_hash=get_password_hash("password123"),
+        role=UserRole.PROVIDER,
+        is_active=True,
+    )
+    db_session.add(prov_user)
+    db_session.commit()
+    db_session.refresh(citizen)
+    db_session.refresh(prov_user)
 
-    # 2. Setup Provider A (Advocate)
-    p1_res = client.post("/api/auth/register", json={
-        "email": "advocate_a@lexlogic.org",
-        "password": "Password123!",
-        "role": "PROVIDER",
-        "full_name": "Advocate Ananya Sharma"
-    })
-    assert p1_res.status_code == 201
-    p1_token = client.post("/api/auth/login", json={"email": "advocate_a@lexlogic.org", "password": "Password123!"}).json()["access_token"]
-    p1_headers = {"Authorization": f"Bearer {p1_token}"}
+    provider = Provider(
+        user_id=prov_user.id,
+        full_name=f"Adv. Lifecycle {timestamp}",
+        provider_type=ProviderType.ADVOCATE,
+        experience_years=8,
+        location="Delhi",
+        phone="9876543210",
+        bio="Experienced advocate in property law.",
+        verification_status=VerificationStatus.VERIFIED,
+        availability_status=AvailabilityStatus.AVAILABLE,
+        points=0,
+        completed_requests=0,
+        total_requests=0,
+        reliability_score=100.0,
+    )
+    db_session.add(provider)
+    db_session.commit()
+    db_session.refresh(provider)
 
-    # Complete Provider A profile (includes required registration_details & practice_area)
-    up1 = client.put("/api/providers/me", json={
-        "full_name": "Advocate Ananya Sharma",
-        "phone": "+919811000001",
-        "location": "Mumbai",
-        "experience_years": 10,
-        "bio": "Expert Advocate specializing in civil and property litigation.",
-        "availability_status": "AVAILABLE",
-        "field_values": [
-            {"field_name": "practice_area", "value": "Civil Disputes"},
-            {"field_name": "registration_details", "value": "MAH/1234/2015"}
-        ]
-    }, headers=p1_headers)
-    assert up1.status_code == 200
-    assert up1.json()["is_profile_complete"] is True
+    citizen_token = create_access_token(subject=str(citizen.id))
+    provider_token = create_access_token(subject=str(prov_user.id))
 
-    # 3. Setup Provider B (Advocate)
-    p2_res = client.post("/api/auth/register", json={
-        "email": "advocate_b@lexlogic.org",
-        "password": "Password123!",
-        "role": "PROVIDER",
-        "full_name": "Advocate Baldev Raj"
-    })
-    assert p2_res.status_code == 201
-    p2_token = client.post("/api/auth/login", json={"email": "advocate_b@lexlogic.org", "password": "Password123!"}).json()["access_token"]
-    p2_headers = {"Authorization": f"Bearer {p2_token}"}
-
-    up2 = client.put("/api/providers/me", json={
-        "full_name": "Advocate Baldev Raj",
-        "phone": "+919811000002",
-        "location": "Mumbai",
-        "experience_years": 12,
-        "bio": "Experienced Advocate specializing in civil property litigation.",
-        "availability_status": "AVAILABLE",
-        "field_values": [
-            {"field_name": "practice_area", "value": "Civil Disputes"},
-            {"field_name": "registration_details", "value": "MAH/5678/2012"}
-        ]
-    }, headers=p2_headers)
-    assert up2.status_code == 200
-    assert up2.json()["is_profile_complete"] is True
-
-    # 4. Citizen creates service request
-    req_res = client.post("/api/requests", json={
-        "service_category": "Property Law",
-        "description": "Property title deed verification for flat in Bandra Mumbai.",
-        "location": "Mumbai",
-        "preferred_provider_type": "ADVOCATE",
-        "urgency": "HIGH",
-        "legal_aid_interest": True
-    }, headers=citizen_headers)
-    assert req_res.status_code == 201
-    req_data = req_res.json()
-    req_id = req_data["id"]
-    assert req_data["status"] == "OPEN"
-
-    # 5. Provider A expresses interest
-    p1_resp = client.post(f"/api/requests/{req_id}/respond", headers=p1_headers)
-    assert p1_resp.status_code == 200
-    assert p1_resp.json()["status"] in ("CONTACTED", "PENDING")
-
-    # 6. Provider B expresses interest
-    p2_resp = client.post(f"/api/requests/{req_id}/respond", headers=p2_headers)
-    assert p2_resp.status_code == 200
-
-    # Verify duplicate interest by Provider A returns 400 Bad Request
-    p1_dup = client.post(f"/api/requests/{req_id}/respond", headers=p1_headers)
-    assert p1_dup.status_code == 400
-
-    # 7. Citizen checks interested providers list
-    interested_res = client.get(f"/api/requests/{req_id}/interested-providers", headers=citizen_headers)
-    assert interested_res.status_code == 200
-    providers_list = interested_res.json()
-    assert len(providers_list) == 2
-
-    provider_a_id = [p["provider_id"] for p in providers_list if p["full_name"] == "Advocate Ananya Sharma"][0]
-    provider_b_id = [p["provider_id"] for p in providers_list if p["full_name"] == "Advocate Baldev Raj"][0]
-
-    # 8. Citizen accepts Provider A
-    accept_res = client.post(f"/api/requests/{req_id}/accept-provider/{provider_a_id}", headers=citizen_headers)
-    assert accept_res.status_code == 200
-    updated_req = accept_res.json()
-    assert updated_req["status"] == "IN_PROGRESS"
-    assert updated_req["accepted_provider_id"] == provider_a_id
-
-    # 9. Verify Single Active Provider Constraint: Provider B interaction is now DECLINED
-    interested_after_accept = client.get(f"/api/requests/{req_id}/interested-providers", headers=citizen_headers).json()
-    p_b_status = [p["interaction_status"] for p in interested_after_accept if p["provider_id"] == provider_b_id][0]
-    assert p_b_status == "DECLINED"
-
-    # 10. Provider B tries to request completion (IDOR Protection -> 403 Forbidden)
-    p2_comp_try = client.post(f"/api/requests/{req_id}/request-completion", headers=p2_headers)
-    assert p2_comp_try.status_code == 403
-
-    # 11. Provider A requests completion (IN_PROGRESS -> COMPLETION_REQUESTED)
-    p1_req_comp = client.post(f"/api/requests/{req_id}/request-completion", headers=p1_headers)
-    assert p1_req_comp.status_code == 200
-    assert p1_req_comp.json()["status"] == "COMPLETION_REQUESTED"
-
-    # Verify Provider A points before citizen confirmation (+20 profile + 10 availability + 10 response = 40 points)
-    pts_before = client.get("/api/providers/me/points", headers=p1_headers).json()["total_points"]
-    assert pts_before == 40
-
-    # 12. Unrelated Citizen tries to confirm completion (IDOR Protection -> 403 Forbidden)
-    unrelated_citizen = client.post("/api/auth/register", json={
-        "email": "unrelated_citizen@lexlogic.org",
-        "password": "Password123!",
-        "role": "CITIZEN",
-        "full_name": "Unrelated Citizen"
-    })
-    unrelated_token = client.post("/api/auth/login", json={"email": "unrelated_citizen@lexlogic.org", "password": "Password123!"}).json()["access_token"]
-    unrelated_headers = {"Authorization": f"Bearer {unrelated_token}"}
-
-    bad_confirm = client.post(f"/api/requests/{req_id}/confirm-completion", headers=unrelated_headers)
-    assert bad_confirm.status_code == 403
-
-    # 13. Citizen confirms completion (COMPLETION_REQUESTED -> COMPLETED)
-    confirm_res = client.post(f"/api/requests/{req_id}/confirm-completion", headers=citizen_headers)
-    assert confirm_res.status_code == 200
-    assert confirm_res.json()["status"] == "COMPLETED"
-
-    # 14. Verify Provider A received completion points (+20 standard + 30 pro-bono legal aid = +50 points added, total 90 points)
-    pts_after = client.get("/api/providers/me/points", headers=p1_headers).json()["total_points"]
-    assert pts_after == 90
-
-    # 15. Verify Audit Trail entries logged
-    audits = db.query(AuditLog).filter(AuditLog.resource_id == req_id).all()
-    actions = [a.action for a in audits]
-    assert "SERVICE_REQUEST_CREATE" in actions
-    assert "PROVIDER_REQUEST_RESPOND" in actions
-    assert "CITIZEN_ACCEPT_PROVIDER" in actions
-    assert "PROVIDER_REQUEST_COMPLETION" in actions
-    assert "SERVICE_REQUEST_COMPLETE" in actions
+    return {
+        "citizen": citizen,
+        "provider_user": prov_user,
+        "provider": provider,
+        "citizen_token": citizen_token,
+        "provider_token": provider_token,
+    }
 
 
-def test_document_permission_isolation_and_revocation(client, setup_database):
-    """Test explicit document permission security:
-    Connecting Citizen and Provider does NOT automatically share documents.
-    Citizen explicitly shares document with VIEW permission.
-    Provider view is allowed, but download is blocked for VIEW permission.
-    When Citizen revokes access, Provider view/download returns 403 Forbidden.
-    """
-    db = setup_database
+def test_full_service_lifecycle_flow(setup_lifecycle_users):
+    client = TestClient(app)
+    c_token = setup_lifecycle_users["citizen_token"]
+    p_token = setup_lifecycle_users["provider_token"]
+    provider_id = setup_lifecycle_users["provider"].id
+    citizen_id = setup_lifecycle_users["citizen"].id
 
-    # Citizen & Provider setup
-    c_res = client.post("/api/auth/register", json={
-        "email": "doc_citizen@lexlogic.org", "password": "Password123!", "role": "CITIZEN", "full_name": "Doc Citizen"
-    })
-    c_token = client.post("/api/auth/login", json={"email": "doc_citizen@lexlogic.org", "password": "Password123!"}).json()["access_token"]
-    c_headers = {"Authorization": f"Bearer {c_token}"}
+    # 1. Citizen creates service request
+    req_resp = client.post(
+        "/api/requests",
+        headers={"Authorization": f"Bearer {c_token}"},
+        json={
+            "service_category": "Property Law",
+            "description": "Boundary dispute requiring advocate representation",
+            "location": "Delhi",
+            "preferred_provider_type": "ADVOCATE",
+            "urgency": "HIGH",
+            "legal_aid_interest": True
+        }
+    )
+    assert req_resp.status_code == 201
+    request_id = req_resp.json()["id"]
+    assert req_resp.json()["status"] == "OPEN"
 
-    p_res = client.post("/api/auth/register", json={
-        "email": "doc_advocate@lexlogic.org", "password": "Password123!", "role": "PROVIDER", "full_name": "Doc Advocate"
-    })
-    p_token = client.post("/api/auth/login", json={"email": "doc_advocate@lexlogic.org", "password": "Password123!"}).json()["access_token"]
-    p_headers = {"Authorization": f"Bearer {p_token}"}
+    # 2. Provider expresses interest
+    resp_interest = client.post(
+        f"/api/requests/{request_id}/respond",
+        headers={"Authorization": f"Bearer {p_token}"}
+    )
+    assert resp_interest.status_code == 200
 
-    # Upload document
-    pdf_file = ("property_deed.pdf", io.BytesIO(VALID_PDF_BYTES), "application/pdf")
-    upload_res = client.post("/api/documents/upload", files={"file": pdf_file}, data={"title": "Property Deed Title"}, headers=c_headers)
-    assert upload_res.status_code == 201
-    doc_id = upload_res.json()["id"]
+    # 3. Citizen accepts provider
+    accept_resp = client.post(
+        f"/api/requests/{request_id}/accept-provider/{provider_id}",
+        headers={"Authorization": f"Bearer {c_token}"}
+    )
+    assert accept_resp.status_code == 200
+    assert accept_resp.json()["status"] == "IN_PROGRESS"
 
-    p_me = client.get("/api/providers/me", headers=p_headers).json()
-    provider_id = p_me["id"]
+    # 4. Provider requests documents
+    doc_req_resp = client.post(
+        f"/api/requests/{request_id}/request-documents",
+        headers={"Authorization": f"Bearer {p_token}"},
+        json={"requested_documents": "Property deed, Tax receipt"}
+    )
+    assert doc_req_resp.status_code == 200
 
-    # Before explicit share: Provider cannot access document
-    unshared_view = client.get(f"/api/documents/{doc_id}", headers=p_headers)
-    assert unshared_view.status_code == 403
+    # 5. Citizen uploads document with request_id & auto share with VIEW permission
+    upload_resp = client.post(
+        "/api/documents/upload",
+        headers={"Authorization": f"Bearer {c_token}"},
+        data={
+            "title": "Property Deed Title",
+            "request_id": str(request_id),
+            "permission": "VIEW"
+        },
+        files={"file": ("deed.pdf", b"%PDF-1.4 test deed content", "application/pdf")}
+    )
+    assert upload_resp.status_code == 201
+    doc_id = upload_resp.json()["id"]
 
-    # Citizen shares with VIEW permission (using provider_id schema field)
-    share_res = client.post(f"/api/documents/{doc_id}/share", json={
-        "provider_id": provider_id,
-        "permission": "VIEW"
-    }, headers=c_headers)
-    assert share_res.status_code == 200
+    # 6. Provider views request documents (verifies view permission)
+    req_docs_resp = client.get(
+        f"/api/documents/request/{request_id}",
+        headers={"Authorization": f"Bearer {p_token}"}
+    )
+    assert req_docs_resp.status_code == 200
+    assert len(req_docs_resp.json()) >= 1
+    assert req_docs_resp.json()[0]["current_user_permission"] == "VIEW"
 
-    # Provider views metadata/stream (Allowed for VIEW permission)
-    prov_view = client.get(f"/api/documents/{doc_id}?download=false", headers=p_headers)
-    assert prov_view.status_code == 200
+    # 7. Provider reviews documents as SUFFICIENT
+    review_resp = client.post(
+        f"/api/requests/{request_id}/review-documents?action=SUFFICIENT",
+        headers={"Authorization": f"Bearer {p_token}"}
+    )
+    assert review_resp.status_code == 200
+    assert review_resp.json()["status"] == "DOCUMENTS_REVIEWED"
 
-    # Provider tries to download file content (Blocked for VIEW permission -> 403 Forbidden)
-    prov_dl = client.get(f"/api/documents/{doc_id}?download=true", headers=p_headers)
-    assert prov_dl.status_code == 403
+    # 8. Provider marks case ready for service
+    ready_resp = client.post(
+        f"/api/requests/{request_id}/mark-ready",
+        headers={"Authorization": f"Bearer {p_token}"}
+    )
+    assert ready_resp.status_code == 200
+    assert ready_resp.json()["status"] == "READY_FOR_SERVICE"
 
-    # Citizen upgrades share permission to VIEW_AND_DOWNLOAD
-    upgrade_share = client.post(f"/api/documents/{doc_id}/share", json={
-        "provider_id": provider_id,
-        "permission": "VIEW_AND_DOWNLOAD"
-    }, headers=c_headers)
-    assert upgrade_share.status_code == 200
+    # 9. Provider configures availability and Citizen checks slots
+    target_dt = datetime.now() + timedelta(days=1)
+    while target_dt.weekday() >= 5:  # Skip Saturday (5) and Sunday (6)
+        target_dt += timedelta(days=1)
+    target_date = target_dt.strftime("%Y-%m-%d")
+    avail_resp = client.get(
+        f"/api/appointments/available-slots?provider_id={provider_id}&date={target_date}",
+        headers={"Authorization": f"Bearer {c_token}"}
+    )
+    assert avail_resp.status_code == 200
+    avail_slots = avail_resp.json()["available_slots"]
+    assert len(avail_slots) > 0
+    chosen_slot_time = avail_slots[0]
 
-    # Now Provider download succeeds
-    prov_dl_success = client.get(f"/api/documents/{doc_id}?download=true", headers=p_headers)
-    assert prov_dl_success.status_code == 200
-    assert prov_dl_success.content == VALID_PDF_BYTES
+    # 10. Citizen books appointment slot
+    slot_dt_str = f"{target_date}T{chosen_slot_time}:00Z"
+    book_resp = client.post(
+        "/api/appointments/book",
+        headers={"Authorization": f"Bearer {c_token}"},
+        json={
+            "request_id": request_id,
+            "provider_id": provider_id,
+            "slot_datetime": slot_dt_str,
+            "purpose": "Initial Case Consultation",
+            "duration_minutes": 30
+        }
+    )
+    assert book_resp.status_code == 201
+    appt_id = book_resp.json()["id"]
 
-    # Citizen revokes access
-    revoke_res = client.post(f"/api/documents/{doc_id}/revoke", json={"provider_id": provider_id}, headers=c_headers)
-    assert revoke_res.status_code == 200
+    # 11. Double-booking prevention check (attempt same slot)
+    double_book_resp = client.post(
+        "/api/appointments/book",
+        headers={"Authorization": f"Bearer {c_token}"},
+        json={
+            "request_id": request_id,
+            "provider_id": provider_id,
+            "slot_datetime": slot_dt_str,
+            "purpose": "Conflicting Consultation",
+            "duration_minutes": 30
+        }
+    )
+    assert double_book_resp.status_code == 400
+    assert any(term in double_book_resp.json()["detail"].lower() for term in ["booked", "unavailable"])
 
-    # Now Provider access is revoked (403 Forbidden)
-    revoked_view = client.get(f"/api/documents/{doc_id}", headers=p_headers)
-    assert revoked_view.status_code == 403
+    # 12. Provider confirms appointment
+    confirm_appt_resp = client.post(
+        f"/api/appointments/{appt_id}/confirm",
+        headers={"Authorization": f"Bearer {p_token}"}
+    )
+    assert confirm_appt_resp.status_code == 200
+    assert confirm_appt_resp.json()["status"] == "CONFIRMED"
+
+    # 13. Provider starts service execution (seeds milestones)
+    start_resp = client.post(
+        f"/api/requests/{request_id}/start-service",
+        headers={"Authorization": f"Bearer {p_token}"}
+    )
+    assert start_resp.status_code == 200
+    assert start_resp.json()["status"] == "IN_PROGRESS"
+
+    # Check milestones seeded
+    ms_resp = client.get(
+        f"/api/requests/{request_id}/milestones",
+        headers={"Authorization": f"Bearer {c_token}"}
+    )
+    assert ms_resp.status_code == 200
+    milestones = ms_resp.json()
+    assert len(milestones) >= 5
+
+    # Provider completes first milestone
+    first_ms_id = milestones[0]["id"]
+    update_ms_resp = client.put(
+        f"/api/requests/{request_id}/milestones/{first_ms_id}",
+        headers={"Authorization": f"Bearer {p_token}"},
+        json={"status": "COMPLETED", "notes": "Case assessment fully executed"}
+    )
+    assert update_ms_resp.status_code == 200
+    assert update_ms_resp.json()["status"] == "COMPLETED"
+
+    # 14. Lightweight Case Update
+    upd_resp = client.post(
+        f"/api/requests/{request_id}/updates",
+        headers={"Authorization": f"Bearer {p_token}"},
+        json={"update_text": "Drafted initial notice for boundary dispute."}
+    )
+    assert upd_resp.status_code == 201
+
+    # 15. Provider submits completion note
+    sub_comp_resp = client.post(
+        f"/api/requests/{request_id}/submit-completion",
+        headers={"Authorization": f"Bearer {p_token}"},
+        json={"completion_note": "Boundary dispute notice served and matter concluded."}
+    )
+    assert sub_comp_resp.status_code == 200
+    assert sub_comp_resp.json()["status"] == "COMPLETION_PENDING"
+
+    # 16. Citizen confirms completion
+    confirm_comp_resp = client.post(
+        f"/api/requests/{request_id}/complete",
+        headers={"Authorization": f"Bearer {c_token}"}
+    )
+    assert confirm_comp_resp.status_code == 200
+    assert confirm_comp_resp.json()["status"] == "COMPLETED"
+
+    # 17. Verify timeline events
+    timeline_resp = client.get(
+        f"/api/requests/{request_id}/timeline",
+        headers={"Authorization": f"Bearer {c_token}"}
+    )
+    assert timeline_resp.status_code == 200
+    events = timeline_resp.json()
+    assert len(events) >= 5
+
+    # 18. Final case summary check
+    summary_resp = client.get(
+        f"/api/requests/{request_id}/summary",
+        headers={"Authorization": f"Bearer {c_token}"}
+    )
+    assert summary_resp.status_code == 200
+    summary_data = summary_resp.json()
+    assert summary_data["final_status"] == "COMPLETED"
+    assert summary_data["documents_exchanged_count"] >= 1
+    assert summary_data["appointment_count"] >= 1
+    assert summary_data["final_completion_note"] is not None

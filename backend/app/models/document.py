@@ -1,14 +1,14 @@
 from datetime import datetime, timezone
 import enum
 from typing import Optional, List, TYPE_CHECKING
-from sqlalchemy import String, Integer, DateTime, Enum as SQLEnum, ForeignKey, UniqueConstraint, JSON
+from sqlalchemy import String, Integer, DateTime, Enum as SQLEnum, ForeignKey, UniqueConstraint, JSON, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
     from app.models.provider import Provider
-
+    from app.models.request import ServiceRequest
 
 
 class DocumentVisibility(str, enum.Enum):
@@ -28,11 +28,15 @@ class DocumentSharePermission(str, enum.Enum):
 
 
 class Document(Base):
-    """Document metadata model (stores private file reference, mime type, size, visibility status)."""
+    """Document metadata model (stores private file reference, mime type, size, visibility status, versioning)."""
     __tablename__ = "documents"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    request_id: Mapped[Optional[int]] = mapped_column(ForeignKey("service_requests.id"), nullable=True, index=True)
+    parent_document_id: Mapped[Optional[int]] = mapped_column(ForeignKey("documents.id"), nullable=True, index=True)
+    version_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     file_path: Mapped[str] = mapped_column(String(512), nullable=False)
@@ -41,6 +45,7 @@ class Document(Base):
     visibility: Mapped[DocumentVisibility] = mapped_column(
         SQLEnum(DocumentVisibility), default=DocumentVisibility.PRIVATE, nullable=False
     )
+    request_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     extracted_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
@@ -57,6 +62,7 @@ class Document(Base):
     shares: Mapped[List["DocumentShare"]] = relationship(
         "DocumentShare", back_populates="document", cascade="all, delete-orphan"
     )
+    request: Mapped[Optional["ServiceRequest"]] = relationship("ServiceRequest", foreign_keys=[request_id])
 
 
 class DocumentShare(Base):

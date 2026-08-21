@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import enum
 from typing import Optional, List, TYPE_CHECKING
-from sqlalchemy import String, Float, Boolean, DateTime, Enum as SQLEnum, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import String, Float, Boolean, DateTime, Enum as SQLEnum, ForeignKey, Text, UniqueConstraint, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 from app.models.provider import ProviderType
@@ -11,14 +11,19 @@ if TYPE_CHECKING:
     from app.models.provider import Provider
 
 
-
 class RequestStatus(str, enum.Enum):
     OPEN = "OPEN"
     MATCHED = "MATCHED"
     CONTACTED = "CONTACTED"
+    DOCUMENTS_SUBMITTED = "DOCUMENTS_SUBMITTED"
+    DOCUMENTS_REVIEWED = "DOCUMENTS_REVIEWED"
+    ADDITIONAL_INFORMATION_REQUIRED = "ADDITIONAL_INFORMATION_REQUIRED"
+    READY_FOR_SERVICE = "READY_FOR_SERVICE"
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETION_REQUESTED = "COMPLETION_REQUESTED"
+    COMPLETION_PENDING = "COMPLETION_PENDING"
     COMPLETED = "COMPLETED"
+    COMPLETION_DISPUTED = "COMPLETION_DISPUTED"
     CANCELLED = "CANCELLED"
 
 
@@ -50,6 +55,9 @@ class ServiceRequest(Base):
     status: Mapped[RequestStatus] = mapped_column(
         SQLEnum(RequestStatus), default=RequestStatus.OPEN, nullable=False
     )
+    completion_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    dispute_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
@@ -64,6 +72,15 @@ class ServiceRequest(Base):
     citizen: Mapped["User"] = relationship("User", foreign_keys=[citizen_id], back_populates="service_requests")
     provider_interactions: Mapped[List["RequestProvider"]] = relationship(
         "RequestProvider", back_populates="request", cascade="all, delete-orphan"
+    )
+    timeline_events: Mapped[List["CaseTimelineEvent"]] = relationship(
+        "CaseTimelineEvent", back_populates="request", cascade="all, delete-orphan"
+    )
+    milestones: Mapped[List["CaseMilestone"]] = relationship(
+        "CaseMilestone", back_populates="request", cascade="all, delete-orphan"
+    )
+    case_updates: Mapped[List["CaseUpdate"]] = relationship(
+        "CaseUpdate", back_populates="request", cascade="all, delete-orphan"
     )
 
     @property
@@ -115,3 +132,53 @@ class RequestProvider(Base):
     # Relationships
     request: Mapped["ServiceRequest"] = relationship("ServiceRequest", back_populates="provider_interactions")
     provider: Mapped["Provider"] = relationship("Provider", back_populates="request_interactions")
+
+
+class CaseTimelineEvent(Base):
+    """Real backend event log for case activity timeline."""
+    __tablename__ = "case_timeline_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    request_id: Mapped[int] = mapped_column(ForeignKey("service_requests.id"), nullable=False, index=True)
+    actor_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), nullable=True)
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    request: Mapped["ServiceRequest"] = relationship("ServiceRequest", back_populates="timeline_events")
+
+
+class CaseMilestone(Base):
+    """Provider-reported service milestones for cases in progress."""
+    __tablename__ = "case_milestones"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    request_id: Mapped[int] = mapped_column(ForeignKey("service_requests.id"), nullable=False, index=True)
+    milestone_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="PENDING", nullable=False)  # PENDING, IN_PROGRESS, COMPLETED
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    request: Mapped["ServiceRequest"] = relationship("ServiceRequest", back_populates="milestones")
+
+
+class CaseUpdate(Base):
+    """Lightweight structured case activity update posted by provider or citizen."""
+    __tablename__ = "case_updates"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    request_id: Mapped[int] = mapped_column(ForeignKey("service_requests.id"), nullable=False, index=True)
+    author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    author_role: Mapped[str] = mapped_column(String(50), nullable=False)  # PROVIDER, CITIZEN
+    update_text: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    request: Mapped["ServiceRequest"] = relationship("ServiceRequest", back_populates="case_updates")
